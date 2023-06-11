@@ -1,0 +1,9 @@
+
+//-------------------------------------Clamp()-----------------------------------------
+//
+//	clamps the first argument between the second two
+//
+//-------------------------------------------------------------------------------------
+const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
+
+export default clamp;

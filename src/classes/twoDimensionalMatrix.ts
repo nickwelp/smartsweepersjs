@@ -1,3 +1,4 @@
+import Vector2d from "./vector2d";
 
 
 class TwoDimensionalMatrix {
@@ -85,6 +86,15 @@ class TwoDimensionalMatrix {
         matrix._21 = -sin;
         matrix._22 = cos;
         this.TwoDimensionalMatrixMultiply(matrix);
+    }
+
+    public transformPoints(points: Vector2d[]): void {
+        for (let i = 0; i < points.length; i++) {
+            let tempX = (this._11 * points[i].x) + (this._21 * points[i].y) + (this._31);
+            let tempY = (this._12 * points[i].x) + (this._22 * points[i].y) + (this._32);
+            points[i].x = tempX;
+            points[i].y = tempY;
+        }
     }
 };
 

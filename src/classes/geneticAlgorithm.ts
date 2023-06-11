@@ -1,17 +1,17 @@
 import { dMaxPerturbation, iNumCopiesElite, iNumElite } from "../config";
 
-class Genome {
+export class Genome {
   vecWeights: number[] = [];
   dFitness: number = 0;
-  constructor(a:any,b:any) {
-    if(arguments.length === 1) {
-      // dFitness alone.. the C++ version of this algorithm uses 
-      // method overrides on the constructor
-      // this arguments sniffing emulates that
-      this.dFitness = arguments[0];
-    } else if (arguments.length === 2){
-      this.vecWeights = arguments[0];
-      this.dFitness = arguments[1];
+  static sort(a:Genome,b:Genome){
+    return a.dFitness - b.dFitness;
+  }
+  constructor(w:number[] = [], dFitness:number = 0) {
+    if(w.length < 1){
+      this.dFitness = 0;
+    } else if (w.length > 0){
+      this.vecWeights = w;
+      this.dFitness = dFitness;
     }
   }
 }
@@ -42,7 +42,7 @@ class GeneticAlgorithm {
     this.dWorstFitness = 99999999;
     this.dAverageFitness = 0;
     //initialise population with chromosomes consisting of random
-	  //weights and all fitnesses set to zero
+	  //weights while all fitnesses are zero
     for (let i=0; i<this.iPopSize; i++) {
       this.vecPop.push(new Genome([],0));
       for (let j=0; j<this.iChromoLength; j++){
@@ -245,6 +245,13 @@ class GeneticAlgorithm {
     this.dWorstFitness = 9999999;
     this.dAverageFitness = 0;
   }
+
+  //accessor methods
+  getChromos() {return this.vecPop;}
+  getGeneration() {return this.cGeneration;}
+  averageFitness() {return this.dTotalFitness / this.iPopSize;}
+  bestFitness() {return this.dBestFitness;}
+  
 
 
 
