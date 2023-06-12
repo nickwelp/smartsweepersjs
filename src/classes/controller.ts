@@ -1,6 +1,6 @@
 import Vector2d from "./vector2d";
 import GeneticAlgorithm, { Genome } from "./geneticAlgorithm";
-import { iNumCopiesElite, iNumElite, iNumMines, iNumTicks, iNumSweepers, dMutationRate, dCrossoverRate, dMineScale } from "../config";
+import { iNumElite, iNumMines, iNumTicks, iNumSweepers, dMutationRate, dCrossoverRate, dMineScale } from "../config";
 import Minesweeper from "./mineSweeper";
 import TwoDimensionalMatrix from "./twoDimensionalMatrix";
 
@@ -23,8 +23,6 @@ sweeper[12] = new Vector2d(-0.25, 1.75);
 sweeper[13] = new Vector2d(0.25, 1.75);
 sweeper[14] = new Vector2d(0.25, 0.5);
 sweeper[15] = new Vector2d(0.5, 0.5);
-
-// NICK you were working on this and in mineSweeper.ts
 
 const numberMineVertices = 4;
 const mine: Vector2d[] = new Array(numberMineVertices); 
@@ -115,7 +113,52 @@ class Controller {
 
     destroy(){}
 
-    render():void{}
+    render():void{
+        const generationText = `Generation: ${this.iGeneration}`;
+        const ctx = this.canvas.getContext("2d");
+        if(!ctx) return;
+        ctx.fillStyle = "white";
+        ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        ctx.font = "16px arial";
+        ctx.strokeText(generationText, 5, 5);
+        if(!this.fastRender){
+            for (let i=0; i<this.numberOfMines; i++) {
+                ctx.beginPath();
+                    ctx.strokeStyle = "green";
+                    ctx.lineWidth = 1;
+                const mineVB = JSON.parse(JSON.stringify(this.mineVB));
+                this.worldTransform(mineVB, this.vecMines[i]);
+                ctx.moveTo(mineVB[0].x, mineVB[0].y);
+                for (let vert=1; vert<mineVB.length; vert++) {
+                    ctx.lineTo(mineVB[vert].x, mineVB[vert].y);
+                }
+                ctx.lineTo(mineVB[0].x, mineVB[0].y);
+                ctx.stroke();
+                ctx.closePath();
+            }
+            ctx.strokeStyle = "red"
+            for (let i=0; i<this.numberOfSweepers; i++) {
+                if(i===iNumElite){
+                    ctx.strokeStyle = "black";
+                }
+                ctx.beginPath();
+                const sweeperVB = JSON.parse(JSON.stringify(this.sweeperVB));
+                this.worldTransform(sweeperVB, this.vecSweepers[i].getPosition());
+                ctx.moveTo(sweeperVB[0].x, sweeperVB[0].y);
+                for (let vert=1; vert<sweeperVB.length; vert++) {
+                    ctx.lineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+                }
+                ctx.lineTo(sweeperVB[0].x, sweeperVB[0].y);
+                ctx.stroke();
+                ctx.closePath();
+            }
+        } else {
+            this.plotStats(ctx);
+        }
+    }
 
     worldTransform(vBuffer:Vector2d[], vPos: Vector2d):void{
         // create a transformation matrix
@@ -178,10 +221,42 @@ class Controller {
         }
         return true;
     }
+
+    plotStats(ctx: CanvasRenderingContext2D | null):void{
+        if(!ctx) return;
+        const s = `Best Fitness: ${this.geneticAlgorithm.bestFitness()}`;
+        const s2 = `Average Fitness: ${this.geneticAlgorithm.averageFitness()}`;
+        ctx.font = "16px arial";
+        ctx.strokeText(s, 5, 5);
+        ctx.strokeText(s2, 5, 25);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 200);
+        ctx.lineTo(200, 200);
+        ctx.stroke();
+        ctx.closePath();
+        ctx.strokeStyle = "red";
+        ctx.beginPath();
+        ctx.moveTo(0, 200);
+        for(let i=0; i<this.vecAvFitness.length; i++){
+            ctx.lineTo(i, 200 - this.vecAvFitness[i]);
+        }
+        ctx.stroke();
+        ctx.closePath();
+        ctx.strokeStyle = "blue";
+        ctx.beginPath();
+        ctx.moveTo(0, 200);
+        for(let i=0; i<this.vecBestFitness.length; i++){
+            ctx.lineTo(i, 200 - this.vecBestFitness[i]);
+        }
+        ctx.stroke();
+        ctx.closePath();
+    }
     // accessor methods
     getFastRender(){return this.fastRender}
     setFastRender(value:boolean){this.fastRender = value}
     fastRenderToggler(){this.fastRender = !this.fastRender} 
-
-
 };
+export default Controller;
