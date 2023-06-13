@@ -71,7 +71,9 @@ class Controller {
         const canvas = document.createElement("canvas");
         canvas.width = 800;
         canvas.height = 600;
-        document.body.appendChild(canvas);
+        setTimeout(() => {
+            document.body.appendChild(canvas);
+        },0);
         this.canvas = canvas;
         this.numberOfSweepers = iNumSweepers;
         this.numberOfMines = iNumMines;
@@ -115,22 +117,27 @@ class Controller {
 
     render():void{
         const generationText = `Generation: ${this.iGeneration}`;
+        console.log(generationText, "render called");
         const ctx = this.canvas.getContext("2d");
-        if(!ctx) return;
+        if(!ctx) {
+            console.log("no context");
+            return;
+        }
         ctx.fillStyle = "white";
         ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.fill();
         ctx.strokeStyle = "black";
-        ctx.lineWidth = 1;
-        ctx.font = "16px arial";
-        ctx.strokeText(generationText, 5, 5);
+        ctx.lineWidth = 0.5;
+        ctx.font = "13px arial";
+        ctx.strokeText(generationText, 5, 15);
         if(!this.fastRender){
             for (let i=0; i<this.numberOfMines; i++) {
                 ctx.beginPath();
-                    ctx.strokeStyle = "green";
-                    ctx.lineWidth = 1;
-                const mineVB = JSON.parse(JSON.stringify(this.mineVB));
-                this.worldTransform(mineVB, this.vecMines[i]);
+                ctx.strokeStyle = "green";
+                ctx.lineWidth = 1;
+                const mineVBTemp = this.mineVB.map((v) => new Vector2d(v.x, v.y));
+                const mineVB = this.worldTransform(mineVBTemp, this.vecMines[i]);
+                console.log(mineVB[0], this.vecMines[i]);
                 ctx.moveTo(mineVB[0].x, mineVB[0].y);
                 for (let vert=1; vert<mineVB.length; vert++) {
                     ctx.lineTo(mineVB[vert].x, mineVB[vert].y);
@@ -145,8 +152,8 @@ class Controller {
                     ctx.strokeStyle = "black";
                 }
                 ctx.beginPath();
-                const sweeperVB = JSON.parse(JSON.stringify(this.sweeperVB));
-                this.worldTransform(sweeperVB, this.vecSweepers[i].getPosition());
+                const sweeperVBTemp = this.sweeperVB.map((v) => new Vector2d(v.x, v.y));
+                const sweeperVB = this.worldTransform(sweeperVBTemp, this.vecSweepers[i].getPosition());
                 ctx.moveTo(sweeperVB[0].x, sweeperVB[0].y);
                 for (let vert=1; vert<sweeperVB.length; vert++) {
                     ctx.lineTo(sweeperVB[vert].x, sweeperVB[vert].y);
@@ -160,15 +167,22 @@ class Controller {
         }
     }
 
-    worldTransform(vBuffer:Vector2d[], vPos: Vector2d):void{
+    worldTransform(vBuffer:Vector2d[], vPos: Vector2d):Vector2d[]{
         // create a transformation matrix
         const matTransform = new TwoDimensionalMatrix();
         // scale
+        console.log("matTransform", matTransform);
         matTransform.scale(dMineScale, dMineScale);
+        console.log("matTransform", matTransform);
+
         // and translate
         matTransform.translate(vPos.x, vPos.y);
         // now transform the ships vertices
-        matTransform.transformPoints(vBuffer);
+        console.log(vPos, vBuffer);
+        const v = matTransform.transformPoints(vBuffer);
+        console.log(v);
+        throw Error();
+        return v;
     }
 
     //-------------------------------------Update-----------------------------

@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 
+/dis2t
 # testing
 /coverage
 

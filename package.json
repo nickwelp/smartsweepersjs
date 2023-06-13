@@ -15,7 +15,7 @@
   "scripts": {
     "start": "parcel src/index.html",
     "watch": "parcel watch",
-    "build": "parcel build --log-level error"
+    "build": "rm -rf ./dist && parcel build --log-level error"
   },
   "eslintConfig": {
     "extends": []

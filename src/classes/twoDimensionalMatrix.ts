@@ -25,6 +25,7 @@ class TwoDimensionalMatrix {
     }
 
     private consumeMatrix(mIn: TwoDimensionalMatrix): void {
+        console.log(mIn._11, mIn._12, mIn._13, mIn._21, mIn._22, mIn._23, mIn._31, mIn._32, mIn._33)
         this._11 = mIn._11;
         this._12 = mIn._12;
         this._13 = mIn._13;
@@ -34,6 +35,8 @@ class TwoDimensionalMatrix {
         this._31 = mIn._31;
         this._32 = mIn._32;
         this._33 = mIn._33;
+        console.log(this._11, this._12, this._13, this._21, this._22, this._23, this._31, this._32, this._33);
+
     }
 
     public TwoDimensionalMatrixMultiply(mIn: TwoDimensionalMatrix): void {
@@ -88,13 +91,15 @@ class TwoDimensionalMatrix {
         this.TwoDimensionalMatrixMultiply(matrix);
     }
 
-    public transformPoints(points: Vector2d[]): void {
+    public transformPoints(points: Vector2d[]): Vector2d[] {
+        const tempPoints: Vector2d[] = [];
+        console.log(this._11, this._12, this._13, this._21, this._22, this._23, this._31, this._32, this._33);
         for (let i = 0; i < points.length; i++) {
             let tempX = (this._11 * points[i].x) + (this._21 * points[i].y) + (this._31);
             let tempY = (this._12 * points[i].x) + (this._22 * points[i].y) + (this._32);
-            points[i].x = tempX;
-            points[i].y = tempY;
+            tempPoints.push(new Vector2d(tempX, tempY));
         }
+        return tempPoints;
     }
 };
 

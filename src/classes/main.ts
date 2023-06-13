@@ -16,7 +16,7 @@ class cppMessageSystem {
         cppMessageSystem.messageQueue.push(message);
     }
     public static popMessage(): string {
-        if(cppMessageSystem.messageQueue.length>0) cppMessageSystem.messageQueue.pop();
+        if(cppMessageSystem.messageQueue.length>0) return cppMessageSystem.messageQueue.pop() || "";
         return "";
     }
     public static peekMessage(): string {
@@ -46,6 +46,7 @@ export class Main {
                 Main.getInstance().controller = new Controller();   
                 break;
             case "paint":
+                console.log("paint");
                 Main.getInstance().controller.render();
                 break;
             case "quit":
@@ -59,18 +60,22 @@ export class Main {
     constructor(){
         const timer = new Timer(iFramesPerSecond);
         timer.start();
-        while(!this.done){
+        const loop = () => { 
+            console.log("loop calling");
             while(cppMessageSystem.peekMessage() !== ""){ 
                 Main.messageProcesser();
             }
             if(timer.readyForNextFrame()){
-               if(!this.controller.update()){
+                if(!this.controller.update()){
                     console.error('Error in controller update');
                     this.done = true;
-               }
-               cppMessageSystem.pushMessage("paint");
+                }
+                cppMessageSystem.pushMessage("paint");
             }
+            if(this.done) cppMessageSystem.pushMessage("quit");
+            setTimeout(loop, 0);
         }
+        setTimeout(loop, 0);    
     }
 }
 

@@ -81,17 +81,15 @@ class Minesweeper {
     * */
     public update(mines: Vector2d[]): Boolean {
         const inputs: number[] = [];
-        const closestMine: Vector2d = this.getClosestMine(mines);
+        const closestMine: Vector2d = new Vector2d(this.getClosestMine(mines).x, this.getClosestMine(mines).y);
         closestMine.normalize();
         inputs.push(closestMine.x);
         inputs.push(closestMine.y);
         inputs.push(this.lookAt.x);
         inputs.push(this.lookAt.y);
-
         const outputs: number[] = this.brain.update(inputs);
-
         if (outputs.length !== Parameters.numOutputs) {
-            throw new Error("Outputs length does not match number of outputs");
+            throw new Error(`Outputs length does not match number of outputs ${outputs.length}, ${Parameters.numOutputs}`);
         }
 
         this.leftTrack = outputs[0];
