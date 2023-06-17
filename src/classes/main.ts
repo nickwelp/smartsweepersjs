@@ -28,10 +28,13 @@ class cppMessageSystem {
 // window.requestAnimationFrame(step);
 
 export class Main {
-    private controller: Controller = new Controller();
+    private controller: Controller;
     private done: boolean = false;
+    private paused: boolean = false;
+    
     
     private static instance: Main;
+    timer: any;
     static getInstance(): Main {
         if (!Main.instance) {
             Main.instance = new Main();
@@ -42,12 +45,16 @@ export class Main {
     // emulate C++'s message system because it's definitely differnt from JS so why not
     public static messageProcesser(): void {
         switch (cppMessageSystem.popMessage()) {
+            case "pause":
+                Main.getInstance().pause();
+                break;
             case "start":
-                Main.getInstance().controller = new Controller();   
+                Main.getInstance().controller = new Controller(Main.getInstance().pause, Main.getInstance().unPause);   
                 break;
             case "paint":
-                console.log("paint");
                 Main.getInstance().controller.render();
+                // confirm("paint");
+                // throw new Error("paint");
                 break;
             case "quit":
                 Main.getInstance().done = true;
@@ -57,25 +64,39 @@ export class Main {
         }
     }
 
-    constructor(){
-        const timer = new Timer(iFramesPerSecond);
-        timer.start();
-        const loop = () => { 
-            console.log("loop calling");
-            while(cppMessageSystem.peekMessage() !== ""){ 
-                Main.messageProcesser();
-            }
-            if(timer.readyForNextFrame()){
-                if(!this.controller.update()){
-                    console.error('Error in controller update');
-                    this.done = true;
-                }
-                cppMessageSystem.pushMessage("paint");
-            }
-            if(this.done) cppMessageSystem.pushMessage("quit");
-            setTimeout(loop, 0);
+    pause(): void {
+        this.paused = true; 
+        confirm("pause");
+        // cppMessageSystem.pushMessage("pause");
+        // throw new Error("Method not implemented.");
+    }
+    unPause(): void {
+
+        this.paused = false;
+        this.loop();
+    }
+
+    private loop = () => {
+        while(cppMessageSystem.peekMessage() !== ""){ 
+            Main.messageProcesser();
         }
-        setTimeout(loop, 0);    
+        if(this.timer.readyForNextFrame()){
+            if(!this.controller.update()){
+                console.error('Error in controller update');
+                this.done = true;
+            }
+            cppMessageSystem.pushMessage("paint");
+        }
+        if(this.done) cppMessageSystem.pushMessage("quit");
+        if(!this.paused) setTimeout(this.loop, 0);
+    }
+
+    constructor(){
+        this.paused = false;
+        this.done = false;
+        this.timer = new Timer(iFramesPerSecond);
+        this.controller= new Controller(this.pause, this.unPause);
+        setTimeout(this.loop, 0);    
     }
 }
 

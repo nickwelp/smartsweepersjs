@@ -24,7 +24,7 @@ class Parameters {
     /* number of time steps we allow for each generation to live */
     static numTicks = 2000;
     /* scaling factor for mines */
-    static mineScale = 2;
+    static mineScale = 8;
     /* Genetic Algorithim parameters */
     static crossoverRate = 0.7;
     static mutationRate = 0.1;
