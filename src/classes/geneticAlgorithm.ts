@@ -1,5 +1,4 @@
-import { dMaxPerturbation, iNumCopiesElite, iNumElite } from "../config";
-
+import Parameters from "./parameters";
 export class Genome {
   vecWeights: number[] = [];
   dFitness: number = 0;
@@ -10,7 +9,7 @@ export class Genome {
     if(w.length < 1){
       this.dFitness = 0;
     } else if (w.length > 0){
-      this.vecWeights = w;
+      this.vecWeights = [...w];
       this.dFitness = dFitness;
     }
   }
@@ -57,17 +56,22 @@ class GeneticAlgorithm {
   //	greater than dMaxPerturbation
   //  this mutates the chromo in place
   //-----------------------------------------------------------------------
-  mutate(chromo: number[]) {
+  mutate(chromo: number[]):number[] {
     // traverse the chromosome and mutate each weight dependent
     // on the mutation rate
+    const newChromo = [];
     for (let i=0; i<chromo.length; i++) {
       // do we perturb this weight?
       if (Math.random() < this.dMutationRate){
         // add or subtract a small value to the weight
         // Math.random() - Math.random() returns a value between -1 and 1
-        chromo[i] += ((Math.random() - Math.random()) * dMaxPerturbation);
+        newChromo[i] = chromo[i] + ((Math.random() - Math.random()) * Parameters.maxPerturbation);
+      } else {
+        // no mutation
+        newChromo[i] = chromo[i];
       }
     }
+    return newChromo;
   }
 
 
@@ -81,14 +85,14 @@ class GeneticAlgorithm {
     const slice = Math.random() * this.dTotalFitness;
 
     //this will be set to the chosen chromosome
-    let theChosenOne;
+    // this.vecPop.sort(Genome.sort);
+    console.log("fitness -->", this.vecPop.map(x => x.dFitness));
+    let theChosenOne = this.vecPop[this.vecPop.length - 1]; //placeholder
     
     //go through the chromosones adding up the fitness so far
     let fitnessSoFar = 0;
-    
-    for (let i=0; i<this.iPopSize; i++){
+    for (let i=0; i<this.vecPop.length; i++){
       fitnessSoFar += this.vecPop[i].dFitness;
-      
       //if the fitness so far > random number return the chromo at 
       //this point
       if (fitnessSoFar >= slice){
@@ -97,7 +101,7 @@ class GeneticAlgorithm {
       }
     }
     if(typeof theChosenOne === "undefined") throw new Error('not a genome!');
-    return theChosenOne;
+    return new Genome([...theChosenOne.vecWeights], theChosenOne.dFitness);
   }
 
   //-------------------------------------crossover()-----------------------
@@ -108,14 +112,15 @@ class GeneticAlgorithm {
   crossover(mum:number[], dad:number[], baby1:number[], baby2:number[]){
     //just return parents as offspring dependent on the rate
     //or if parents are the same
-    if ( (Math.random() > this.dCrossoverRate) || (mum === dad)) {
-      baby1 = mum;
-      baby2 = dad;
+    if ( (Math.random() > this.dCrossoverRate) || (mum.join('') === dad.join(''))) {
+      console.log('parents are the same')
+      mum.forEach(x => baby1.push(x));
+      dad.forEach(x => baby2.push(x));
       return;
     }
 
     //determine a crossover point
-    let cp = Math.round(Math.random() * (this.iChromoLength - 1));
+    const cp = Math.round(Math.random() * (this.iChromoLength - 1));
     //create the offspring
     for (let i=0; i<cp; i++){
       baby1.push(mum[i]);
@@ -138,15 +143,16 @@ class GeneticAlgorithm {
   //	Returns a new population of chromosones.
   //
   //-----------------------------------------------------------------------
-  epoch(oldPop:Genome[]):Genome[]{
+  epoch(oldPop:Genome[]):void{
     //assign the given population to the classes population
-    this.vecPop = oldPop;
+    this.vecPop = oldPop.map((g)=>new Genome([...g.vecWeights], g.dFitness));
 
     //reset the appropriate variables
     this.reset();
 
     //sort the population (for scaling and elitism)
-    this.vecPop.sort((a,b)=>a.dFitness - b.dFitness);
+    this.vecPop.sort(Genome.sort);
+
     //calculate best, worst, average and total fitness
     this.calculateBestWorstAvTot();
     
@@ -156,12 +162,14 @@ class GeneticAlgorithm {
     //Now to add a little elitism we shall add in some copies of the
     //fittest genomes. Make sure we add an EVEN number or the roulette
     //wheel sampling will crash
-    if (!(iNumCopiesElite * iNumElite % 2)){
-      this.grabNBest(iNumElite, iNumCopiesElite, vecNewPop);
+    if (!(Parameters.numCopiesElite * Parameters.numElite % 2)){
+      this.grabNBest(Parameters.numElite, Parameters.numCopiesElite, vecNewPop);
+    } else {
+      console.log('error: numCopiesElite * numElite is not even');
     }
+    console.log(`New Population: ${JSON.stringify(vecNewPop.map((g)=>g.dFitness))}`);
     
     //now we enter the GA loop
-    
     //repeat until a new population is generated
     while (vecNewPop.length < this.iPopSize){
       //grab two chromosones
@@ -174,20 +182,19 @@ class GeneticAlgorithm {
 
 
       this.crossover(mum.vecWeights, dad.vecWeights, baby1, baby2);
-
       //now we mutate
-      this.mutate(baby1);
-      this.mutate(baby2);
-
+      const mutieBaby1 = this.mutate(baby1);
+      const mutieBaby2 = this.mutate(baby2);
+      console.log(`mutieBaby1: ${JSON.stringify(mutieBaby1)}`)
       //now copy into vecNewPop population
-      vecNewPop.push(new Genome(baby1, 0));
-      vecNewPop.push(new Genome(baby2, 0));
+      vecNewPop.push(new Genome([...mutieBaby1], 0));
+      vecNewPop.push(new Genome([...mutieBaby2], 0));
     }
 
     //finished so assign new pop back into m_vecPop
-    this.vecPop = vecNewPop;
-
-    return this.vecPop;
+    this.vecPop = vecNewPop.map(({vecWeights}) => new Genome([...vecWeights], 0));
+    oldPop.length = 0;
+    this.vecPop.forEach(({vecWeights}) => oldPop.push(new Genome([...vecWeights], 0)));
   }
 
   
@@ -201,10 +208,9 @@ class GeneticAlgorithm {
     let nB = nBest;
     //add the required amount of copies of the n most fittest 
     //to the supplied vector
-    while(nB--)
-    {
+    while(nB--){
       for (let i=0; i<numCopies; i++){
-        pop.push(this.vecPop[(this.iPopSize - 1) - nB]);
+        pop.push(new Genome([...this.vecPop[(this.vecPop.length - 1) - nB].vecWeights],  this.vecPop[(this.vecPop.length - 1) - nB].dFitness));
       }
     }
   }
@@ -251,10 +257,6 @@ class GeneticAlgorithm {
   getGeneration() {return this.cGeneration;}
   averageFitness() {return this.dTotalFitness / this.iPopSize;}
   bestFitness() {return this.dBestFitness;}
-  
-
-
-
 }
 
 export default GeneticAlgorithm;

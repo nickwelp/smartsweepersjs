@@ -1,5 +1,6 @@
 import NeuronLayer from "./neuronLayer";
-import { dActivationResponse, dBias, iNeuronsPerHiddenLayer, iNumHidden, iNumInputs, iNumOutputs } from "../config";
+import Parameters from "./parameters";
+// import { dActivationResponse, dBias, iNeuronsPerHiddenLayer, iNumHidden, iNumInputs, iNumOutputs } from "./parameters";
 
 class NeuralNet {
   private numInputs: number;
@@ -9,10 +10,10 @@ class NeuralNet {
   private neuronLayers: NeuronLayer[] = [];
 
   constructor(){
-    this.numInputs = iNumInputs;
-    this.numOutputs = iNumOutputs;
-    this.numHiddenLayers = iNumHidden;
-    this.neuronsPerHiddenLayer = iNeuronsPerHiddenLayer;
+    this.numInputs = Parameters.numInputs;
+    this.numOutputs = Parameters.numOutputs;
+    this.numHiddenLayers = Parameters.numHidden;
+    this.neuronsPerHiddenLayer = Parameters.neuronsPerHiddenLayer;
     this.createNet();
   }
 
@@ -72,14 +73,14 @@ class NeuralNet {
     //for each layer
     for (let i=0; i<this.numHiddenLayers; i++){
       //for each neuron
-      // if(this.neuronLayers.length > 0){
+      if(this.neuronLayers.length > 0){
         for (let j=0; j<this.neuronLayers[i].numNeurons; j++){
           //for each weight
           for (let k=0; k<this.neuronLayers[i].vecNeurons[j].numInputs; k++){
             this.neuronLayers[i].vecNeurons[j].vecWeight[k] = weights[cWeight++];
           }
         }
-      // }
+      }
     }
     return;
   }
@@ -111,11 +112,11 @@ class NeuralNet {
             netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[k] * inputs[cWeight++];
           }
           // add in the bias
-          netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[this.numInputs-1] * dBias;
+          netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[this.numInputs-1] * Parameters.bias;
           // we can store the outputs from each layer as we generate them.
           // The combined activation is first filtered through the sigmoid
           // function
-          outputs.push(this.sigmoid(netinput, dActivationResponse));
+          outputs.push(this.sigmoid(netinput, Parameters.activationResponse));
           cWeight = 0;
         }
       }

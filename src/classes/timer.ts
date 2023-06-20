@@ -1,4 +1,4 @@
-import {iFramesPerSecond} from "../config";
+import Parameters from "./parameters";
 
 class Timer {
     private currentTime: number;
@@ -8,7 +8,7 @@ class Timer {
     private perfCountFreq: number;
     private timeElapsed: number;
     private fps: number;
-    constructor(fps: number = iFramesPerSecond){
+    constructor(fps: number = Parameters.framesPerSecond){
         this.currentTime = 0;
         this.lastTime = 0;
         this.nextTime = 0;

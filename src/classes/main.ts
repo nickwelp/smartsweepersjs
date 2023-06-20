@@ -1,6 +1,6 @@
 import Timer from "./timer";
 import Controller from "./controller";
-import { iFramesPerSecond } from "../config";
+import Parameters from "./parameters";
 
 class cppMessageSystem {
     private static instance: cppMessageSystem;
@@ -80,7 +80,7 @@ export class Main {
         while(cppMessageSystem.peekMessage() !== ""){ 
             Main.messageProcesser();
         }
-        if(this.timer.readyForNextFrame()){
+        if(this.timer.readyForNextFrame() || this.controller.getFastRender()){
             if(!this.controller.update()){
                 console.error('Error in controller update');
                 this.done = true;
@@ -94,7 +94,7 @@ export class Main {
     constructor(){
         this.paused = false;
         this.done = false;
-        this.timer = new Timer(iFramesPerSecond);
+        this.timer = new Timer(Parameters.framesPerSecond);
         this.controller= new Controller(this.pause, this.unPause);
         setTimeout(this.loop, 0);    
     }

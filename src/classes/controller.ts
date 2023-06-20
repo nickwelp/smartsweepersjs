@@ -1,8 +1,8 @@
 import Vector2d from "./vector2d";
 import GeneticAlgorithm, { Genome } from "./geneticAlgorithm";
-import { iNumElite, iNumMines, iNumTicks, iNumSweepers, dMutationRate, dCrossoverRate, dMineScale } from "../config";
 import Minesweeper from "./mineSweeper";
 import TwoDimensionalMatrix from "./twoDimensionalMatrix";
+import Parameters from "./parameters";
 
 
 const numberSweeperVertices = 16;
@@ -69,6 +69,20 @@ class Controller {
     private pause: Function;
     private unPause: Function;
     constructor(pause:Function, unPause:Function){
+        const fastRenderLabel = document.createElement("label");
+        fastRenderLabel.innerText = "Fast Render";
+        const fastRenderSwitch = document.createElement("input");
+        fastRenderSwitch.type = "checkbox";
+        fastRenderSwitch.checked = false;
+        fastRenderSwitch.addEventListener("change", (e) => {
+            // @ts-ignore
+            if(e.target.checked) {
+                this.fastRender = true;
+            } else {
+                this.fastRender = false;
+            }
+        });
+        fastRenderLabel.appendChild(fastRenderSwitch);
         const label = document.createElement("label");
         label.innerText = "Pause";
         const pauseSwitch = document.createElement("input");
@@ -87,15 +101,16 @@ class Controller {
         this.pause = pause;
         this.unPause = unPause;
         const canvas = document.createElement("canvas");
-        canvas.width = 800;
-        canvas.height = 600;
+        canvas.width = Parameters.windowWidth;
+        canvas.height = Parameters.windowHeight;
         setTimeout(() => {
             document.body.appendChild(canvas);
             document.body.appendChild(label);
+            document.body.appendChild(fastRenderLabel);
         },0);
         this.canvas = canvas;
-        this.numberOfSweepers = iNumSweepers;
-        this.numberOfMines = iNumMines;
+        this.numberOfSweepers = Parameters.numSweepers;
+        this.numberOfMines =  Parameters.numMines;
         this.vecThePopulation = [];
         this.vecSweepers = new Array(this.numberOfSweepers).fill('').map(() => new Minesweeper());
         this.vecMines = new Array(this.numberOfMines).fill('').map(() => new Vector2d(Math.random() * canvas.width, Math.random() * canvas.height));
@@ -107,8 +122,8 @@ class Controller {
         // initialise the Genetic Algorithm class
         this.geneticAlgorithm = new GeneticAlgorithm(
             this.numberOfSweepers,
-            dMutationRate,
-            dCrossoverRate,
+            Parameters.mutationRate,
+            Parameters.crossoverRate,
             this.numberOfWeightsInNN);
 
         // Get the weights from the GA and insert into the sweepers brains
@@ -123,8 +138,6 @@ class Controller {
         this.mineVB = mine.map((v) => new Vector2d(v.x, v.y));
 
     }
-
-    destroy(){}
 
     render():void{
         const generationText = `Generation: ${this.iGeneration}`;
@@ -163,7 +176,7 @@ class Controller {
                 ctx.beginPath();
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 1;
-                if(i>=iNumElite){
+                if(i>=Parameters.numElite){
                     ctx.strokeStyle = "black";
                 }
                 const sweeperVB = this.sweeperVB.map((v) => new Vector2d(v.x, v.y));
@@ -188,8 +201,7 @@ class Controller {
         // create a transformation matrix
         const matTransform = new TwoDimensionalMatrix();
         // scale
-        matTransform.scale(dMineScale, dMineScale);
-
+        matTransform.scale(Parameters.mineScale, Parameters.mineScale);
         // and translate
         matTransform.translate(vPos.x, vPos.y);
         // now transform the ships vertices
@@ -208,13 +220,13 @@ class Controller {
         //information from its surroundings. The output from the NN is obtained
         //and the sweeper is moved. If it encounters a mine its fitness is
         //updated appropriately,
-        if(this.iTick++ < iNumTicks) {
+        if(this.iTick++ < Parameters.numTicks) {
             this.vecSweepers.forEach((_, i) => {
                 if(!this.vecSweepers[i].update(this.vecMines)){
                     console.log("error in update, wrong amount of NN inputs");
                     return false;
                 }
-                const grabHit = this.vecSweepers[i].checkForMine(this.vecMines, dMineScale);
+                const grabHit = this.vecSweepers[i].checkForMine(this.vecMines, Parameters.mineScale);
                 if (grabHit >= 0) {
                     // we have discovered a mine so increase fitness
                     this.vecSweepers[i].incrementFitness();
@@ -237,11 +249,12 @@ class Controller {
             // reset cycles
             this.iTick = 0;
             // run the GA to create a new population
-            this.vecThePopulation = this.geneticAlgorithm.epoch(this.vecThePopulation);
+            this.geneticAlgorithm.epoch(this.vecThePopulation);
+
             // insert the new (hopefully)improved brains back into the sweepers
             // and reset their positions etc
             this.vecSweepers.forEach((_, i) => {
-                this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights);
+                this.vecSweepers[i].putWeights([...this.vecThePopulation[i].vecWeights]);
                 this.vecSweepers[i].reset();
             });
         }
@@ -253,30 +266,33 @@ class Controller {
         const s = `Best Fitness: ${this.geneticAlgorithm.bestFitness()}`;
         const s2 = `Average Fitness: ${this.geneticAlgorithm.averageFitness()}`;
         ctx.font = "16px arial";
-        ctx.strokeText(s, 5, 5);
-        ctx.strokeText(s2, 5, 25);
+        ctx.strokeText(s, 5, 35);
+        ctx.strokeText(s2, 5, 55);
         ctx.strokeStyle = "black";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(0, 200);
-        ctx.lineTo(200, 200);
+        ctx.lineTo(0, Parameters.windowHeight);
+        ctx.lineTo(Parameters.windowWidth, Parameters.windowHeight);
         ctx.stroke();
         ctx.closePath();
         ctx.strokeStyle = "red";
         ctx.beginPath();
-        ctx.moveTo(0, 200);
-        for(let i=0; i<this.vecAvFitness.length; i++){
-            ctx.lineTo(i, 200 - this.vecAvFitness[i]);
+        ctx.moveTo(0, Parameters.windowHeight);
+        for(let i=0; i<=this.vecAvFitness.length; i++){
+            ctx.lineTo(i * (Parameters.windowWidth/(this.vecAvFitness.length +1)), Parameters.windowHeight - (this.vecAvFitness[i] * Parameters.windowHeight/20));
         }
+        // ctx.lineTo(this.vecAvFitness.length * (Parameters.windowWidth/(this.vecAvFitness.length + 2)), Parameters.windowHeight - (this.vecAvFitness[this.vecAvFitness.length-1] * Parameters.windowHeight/20));
         ctx.stroke();
         ctx.closePath();
         ctx.strokeStyle = "blue";
         ctx.beginPath();
-        ctx.moveTo(0, 200);
+        ctx.moveTo(0, Parameters.windowHeight);
         for(let i=0; i<this.vecBestFitness.length; i++){
-            ctx.lineTo(i, 200 - this.vecBestFitness[i]);
+            ctx.lineTo(i * (Parameters.windowWidth/(this.vecBestFitness.length+1)), Parameters.windowHeight - (this.vecBestFitness[i] * Parameters.windowHeight/20));
         }
+        // ctx.lineTo(this.vecBestFitness.length * (Parameters.windowWidth/(this.vecBestFitness.length + 2)), Parameters.windowHeight - (this.vecBestFitness[this.vecBestFitness.length-1] * Parameters.windowHeight/20));
+
         ctx.stroke();
         ctx.closePath();
     }

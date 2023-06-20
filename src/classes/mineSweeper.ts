@@ -80,12 +80,14 @@ class Minesweeper {
     * */
     public update = (mines: Vector2d[]): Boolean => {
         const inputs: number[] = [];
-        const closestMine: Vector2d = new Vector2d(this.getClosestMine(mines).x, this.getClosestMine(mines).y);
-        closestMine.normalize();
-        inputs.push(closestMine.x);
-        inputs.push(closestMine.y);
+        const closestMine = this.getClosestMine(mines);
+        const closestMineV: Vector2d = new Vector2d(closestMine.x, closestMine.y);
+        closestMineV.normalize();
+        inputs.push(closestMineV.x);
+        inputs.push(closestMineV.y);
         inputs.push(this.lookAt.x);
         inputs.push(this.lookAt.y);
+        this.closestMine = mines.map((e) => `${e.x},${e.y}`).findIndex((e) => e ===`${closestMine.x},${closestMine.y}`);
         const outputs: number[] = this.brain.update(inputs);
         if (outputs.length !== Parameters.numOutputs) {
             throw new Error(`Outputs length does not match number of outputs ${outputs.length}, ${Parameters.numOutputs}`);
@@ -119,9 +121,10 @@ class Minesweeper {
     public getClosestMine = (mines: Vector2d[]): Vector2d => {
         let closestMine = 0;
         let closestDistance = Number.MAX_VALUE;
+        let distance = 0;
         for (let i = 0; i < mines.length; i++) {
             const temp = new Vector2d(this.position.x, this.position.y);
-            const distance = temp.subtract(mines[i]).magnitude();
+            distance = temp.subtract(mines[i]).magnitude();
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closestMine = i;
@@ -142,7 +145,7 @@ class Minesweeper {
         return new Vector2d(this.position.x, this.position.y);
     }
     public checkForMine = (mines: Vector2d[], size:number): number => {
-        const temp = new Vector2d(this.position.x, this.position.y);
+        const temp = this.getPosition();
         const distance = temp.subtract(mines[this.closestMine]).magnitude();
         if (distance < (size + 5)) {
             return this.closestMine;
@@ -156,7 +159,7 @@ class Minesweeper {
 
 	fitness = () => {return this.minesFound;}
   
-    putWeights = (w:number[]) => {this.brain.putWeights(w);}
+    putWeights = (w:number[]) => {this.brain.putWeights([...w]);}
 
 }
 
