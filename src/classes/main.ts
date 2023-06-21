@@ -80,7 +80,7 @@ export class Main {
         while(cppMessageSystem.peekMessage() !== ""){ 
             Main.messageProcesser();
         }
-        if(this.timer.readyForNextFrame() || this.controller.getFastRender()){
+        if(this.controller.getFastRender() || this.timer.readyForNextFrame()){
             if(!this.controller.update()){
                 console.error('Error in controller update');
                 this.done = true;

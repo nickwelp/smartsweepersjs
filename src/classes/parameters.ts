@@ -17,7 +17,7 @@ class Parameters {
     static maxTurnRate = 0.3;
     static maxSpeed = 2;
     /* for controlling the size */
-    static sweeperScale = 2;
+    static sweeperScale = 5;
     /* controller parameters */
     static numMines = 40;
     static numSweepers = 30;
@@ -27,7 +27,7 @@ class Parameters {
     static mineScale = 2;
     /* Genetic Algorithim parameters */
     static crossoverRate = 0.7;
-    static mutationRate = 0.1;
+    static mutationRate = 0.05; // 0.1
     /* the maximum amount the ga may mutate each weight by */
     static maxPerturbation = 0.3;
     /* used for elitism */

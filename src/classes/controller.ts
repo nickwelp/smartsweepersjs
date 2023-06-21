@@ -63,6 +63,7 @@ class Controller {
     private vecAvFitness: number[] = [];
     // stores the best fitness per generation
     private vecBestFitness: number[] = [];
+    private vecMedianFitness: number[] = [];
     private pauseSwitch: HTMLInputElement;
     private canvas: HTMLCanvasElement;
 
@@ -245,11 +246,15 @@ class Controller {
             // update the stats to be used in our stat window
             this.vecAvFitness.push(this.geneticAlgorithm.averageFitness());
             this.vecBestFitness.push(this.geneticAlgorithm.bestFitness());
+            this.vecMedianFitness.push(this.geneticAlgorithm.getMedianFitness());
             this.iGeneration++;
             // reset cycles
             this.iTick = 0;
             // run the GA to create a new population
             this.geneticAlgorithm.epoch(this.vecThePopulation);
+
+            // what are the names of these genomes passed back to us?
+            console.log(`Genome Names: ${this.vecThePopulation.map((g) => g.getName())}`)
 
             // insert the new (hopefully)improved brains back into the sweepers
             // and reset their positions etc
@@ -263,11 +268,17 @@ class Controller {
 
     plotStats(ctx: CanvasRenderingContext2D | null):void{
         if(!ctx) return;
-        const s = `Best Fitness: ${this.geneticAlgorithm.bestFitness()}`;
-        const s2 = `Average Fitness: ${this.geneticAlgorithm.averageFitness()}`;
-        ctx.font = "16px arial";
-        ctx.strokeText(s, 5, 35);
-        ctx.strokeText(s2, 5, 55);
+        const newAv = this.geneticAlgorithm.averageFitness();
+        const newBest = this.geneticAlgorithm.bestFitness();
+        const newMedian = this.geneticAlgorithm.getMedianFitness();
+        const s = `Best Fitness: ${newBest}`;
+        const s2 = `Average Fitness: ${newAv}`;
+        const s3 = `Median Fitness: ${newMedian}`;
+        ctx.font = "10px arial";
+        ctx.strokeText(s, 5, 30);
+        ctx.strokeText(s2, 5, 45);
+        ctx.strokeText(s3, 5, 60);
+
         ctx.strokeStyle = "black";
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -280,21 +291,32 @@ class Controller {
         ctx.beginPath();
         ctx.moveTo(0, Parameters.windowHeight);
         for(let i=0; i<=this.vecAvFitness.length; i++){
-            ctx.lineTo(i * (Parameters.windowWidth/(this.vecAvFitness.length +1)), Parameters.windowHeight - (this.vecAvFitness[i] * Parameters.windowHeight/20));
+            ctx.lineTo(i * (Parameters.windowWidth/(this.vecAvFitness.length +2)), Parameters.windowHeight - (this.vecAvFitness[i] * Parameters.windowHeight/20));
         }
-        // ctx.lineTo(this.vecAvFitness.length * (Parameters.windowWidth/(this.vecAvFitness.length + 2)), Parameters.windowHeight - (this.vecAvFitness[this.vecAvFitness.length-1] * Parameters.windowHeight/20));
+        ctx.lineTo(this.vecAvFitness.length * (Parameters.windowWidth/(this.vecAvFitness.length + 2)), Parameters.windowHeight - (newAv * Parameters.windowHeight/20));
         ctx.stroke();
         ctx.closePath();
         ctx.strokeStyle = "blue";
         ctx.beginPath();
         ctx.moveTo(0, Parameters.windowHeight);
         for(let i=0; i<this.vecBestFitness.length; i++){
-            ctx.lineTo(i * (Parameters.windowWidth/(this.vecBestFitness.length+1)), Parameters.windowHeight - (this.vecBestFitness[i] * Parameters.windowHeight/20));
+            ctx.lineTo(i * (Parameters.windowWidth/(this.vecBestFitness.length+2)), Parameters.windowHeight - (this.vecBestFitness[i] * Parameters.windowHeight/20));
         }
-        // ctx.lineTo(this.vecBestFitness.length * (Parameters.windowWidth/(this.vecBestFitness.length + 2)), Parameters.windowHeight - (this.vecBestFitness[this.vecBestFitness.length-1] * Parameters.windowHeight/20));
+        ctx.lineTo(this.vecBestFitness.length * (Parameters.windowWidth/(this.vecBestFitness.length + 2)), Parameters.windowHeight - (newBest * Parameters.windowHeight/20));
 
         ctx.stroke();
         ctx.closePath();
+        ctx.strokeStyle = "green";
+        ctx.beginPath();
+        ctx.moveTo(0, Parameters.windowHeight);
+        for(let i=0; i<this.vecMedianFitness.length; i++){
+            ctx.lineTo(i * (Parameters.windowWidth/(this.vecMedianFitness.length+2)), Parameters.windowHeight - (this.vecMedianFitness[i] * Parameters.windowHeight/20));
+        }
+        ctx.lineTo(this.vecMedianFitness.length * (Parameters.windowWidth/(this.vecMedianFitness.length + 2)), Parameters.windowHeight - (newMedian * Parameters.windowHeight/20));
+
+        ctx.stroke();
+        ctx.closePath();
+
     }
     // accessor methods
     getFastRender(){return this.fastRender}
