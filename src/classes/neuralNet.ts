@@ -92,7 +92,7 @@ class NeuralNet {
     // first check that we have the correct amount of inputs
     if (inputs.length !== this.numInputs){
       // just return an empty vector if incorrect.
-      throw new Error('wrong number of inputs');
+      console.log(`Error wrong number of inputs, expected ${this.numInputs} got ${inputs.length}`);
       return outputs;
     }
     // For each layer.... (+1 for bias layer)
