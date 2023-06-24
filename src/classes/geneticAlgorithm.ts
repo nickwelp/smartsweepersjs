@@ -14,8 +14,8 @@ export class Genome {
   setName(name:string){
     this.name = name;
   }
-  constructor(w:number[] = [], dFitness:number = 0) {
-    this.name = `Genome_${genomeCoutner++}`;
+  constructor(w:number[] = [], dFitness:number = 0, name:string = "") {
+    this.name = name?name:`Genome_${genomeCoutner++}`;
     if(w.length < 1){
       this.dFitness = 0;
     } else if (w.length > 0){
@@ -96,10 +96,8 @@ class GeneticAlgorithm {
     //generate a random number between 0 & total fitness count
     
     const slice = Math.random() * this.dTotalFitness;
-    console.log('slice',slice, this.dTotalFitness);
     //this will be set to the chosen chromosome
-    // this.vecPop.sort(Genome.sort);
-    let theChosenOne; // = this.vecPop[this.vecPop.length - 1]; //placeholder
+    let theChosenOne;
     
     //go through the chromosomes adding up the fitness so far
     let fitnessSoFar = 0;
@@ -113,7 +111,7 @@ class GeneticAlgorithm {
       }
     }
     if(typeof theChosenOne === "undefined") throw new Error('not a genome!');
-    return new Genome([...theChosenOne.vecWeights], theChosenOne.dFitness);
+    return new Genome([...theChosenOne.vecWeights], theChosenOne.dFitness, theChosenOne.getName());
   }
 
   //-------------------------------------crossover()-----------------------
@@ -156,15 +154,15 @@ class GeneticAlgorithm {
   //-----------------------------------------------------------------------
   epoch(oldPop:Genome[]):void{
     //assign the given population to the classes population
+    console.log(`this.vecPop: ${JSON.stringify(this.vecPop.map((g)=>g.getName()))}`);
+    console.log(`oldPop: ${JSON.stringify(oldPop.map((g)=>g.getName()))}`);
     this.vecPop = oldPop;
 
     //reset the appropriate variables
     this.reset();
 
     //sort the population (for scaling and elitism)
-    console.log(`this Vec Population: ${JSON.stringify(this.vecPop.map((g)=>g.dFitness))}`)
     this.vecPop.sort(Genome.sort);
-    console.log(`this Vec Population After sort: ${JSON.stringify(this.vecPop.map((g)=>g.dFitness))}`)
 
     //calculate best, worst, average and total fitness
     this.calculateBestWorstAvTot();
@@ -180,7 +178,6 @@ class GeneticAlgorithm {
     } else {
       console.log('error: numCopiesElite * numElite is not even');
     }
-    console.log(`New Population: ${JSON.stringify(vecNewPop.map((g)=>g.dFitness))}`);
     
     //now we enter the GA loop
     //repeat until a new population is generated
@@ -208,7 +205,6 @@ class GeneticAlgorithm {
     this.vecPop = vecNewPop;
     oldPop.length = 0;
     oldPop.push(...this.vecPop);
-    // this.vecPop.forEach(({vecWeights}) => oldPop.push(new Genome([...vecWeights], 0)));
   }
 
   
@@ -224,9 +220,12 @@ class GeneticAlgorithm {
     //to the supplied vector
     while(nB--){
       for (let i=0; i<numCopies; i++){
-        pop.push(new Genome([...this.vecPop[(this.vecPop.length - 1) - nB].vecWeights],  0));
-        pop[pop.length-1].setName(this.vecPop[(this.vecPop.length - 1) - nB].getName());
-        console.log(`Pushing best genome - ${nB}`)
+        pop.push(
+          new Genome([
+            ...this.vecPop[(this.vecPop.length - 1) - nB].vecWeights],  
+            0, 
+            this.vecPop[(this.vecPop.length - 1) - nB].getName())
+        );
       }
     }
   }

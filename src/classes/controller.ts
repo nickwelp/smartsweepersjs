@@ -254,7 +254,7 @@ class Controller {
             this.geneticAlgorithm.epoch(this.vecThePopulation);
 
             // what are the names of these genomes passed back to us?
-            console.log(`Genome Names: ${this.vecThePopulation.map((g) => g.getName())}`)
+            console.log(`Generation ${this.iGeneration} Genome Names:\n\t${this.vecThePopulation.map((g) => g.getName()).join("\n\t")}`)
 
             // insert the new (hopefully)improved brains back into the sweepers
             // and reset their positions etc

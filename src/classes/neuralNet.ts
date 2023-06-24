@@ -92,9 +92,10 @@ class NeuralNet {
     // first check that we have the correct amount of inputs
     if (inputs.length !== this.numInputs){
       // just return an empty vector if incorrect.
+      throw new Error('wrong number of inputs');
       return outputs;
     }
-    // For each layer....
+    // For each layer.... (+1 for bias layer)
     for (let i=0; i<this.numHiddenLayers + 1; i++){
       if ( i > 0 ){
         inputs = [...outputs];
