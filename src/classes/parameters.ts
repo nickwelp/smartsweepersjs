@@ -1,8 +1,8 @@
 class Parameters {
     /* General parameters */
-    static windowWidth = 400;
-    static windowHeight = 400;
-    static framesPerSecond = 120;
+    static windowWidth = 800;
+    static windowHeight = 600;
+    static framesPerSecond = 60;
 
     /* Used for the neural network */
     static numInputs = 4;
@@ -17,7 +17,7 @@ class Parameters {
     static maxTurnRate = 0.3;
     static maxSpeed = 2;
     /* for controlling the size */
-    static sweeperScale = 5;
+    static sweeperScale = 2;
     /* controller parameters */
     static numMines = 40;
     static numSweepers = 30;
@@ -27,12 +27,13 @@ class Parameters {
     static mineScale = 2;
     /* Genetic Algorithim parameters */
     static crossoverRate = 0.7;
-    static mutationRate = 0.05; // 0.1
+    static mutationRate = 0.1; // 0.1
     /* the maximum amount the ga may mutate each weight by */
     static maxPerturbation = 0.3;
     /* used for elitism */
     static numElite = 4;
-    static numCopiesElite = 1
+    static numCopiesElite = 1;
+    static useSquaredFitness = false;
 }
 
 export default Parameters;

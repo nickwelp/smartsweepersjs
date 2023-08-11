@@ -1,7 +1,8 @@
 import Parameters from "./parameters";
-let genomeCoutner = 0;
+
 
 export class Genome {
+  static genomeCoutner = 0;
   vecWeights: number[] = [];
   dFitness: number = 0;
   private name:string;
@@ -15,7 +16,7 @@ export class Genome {
     this.name = name;
   }
   constructor(w:number[] = [], dFitness:number = 0, name:string = "") {
-    this.name = name?name:`Genome_${genomeCoutner++}`;
+    this.name = name?name:`Genome_${Genome.genomeCoutner++}`;
     if(w.length < 1){
       this.dFitness = 0;
     } else if (w.length > 0){
@@ -39,7 +40,7 @@ class GeneticAlgorithm {
   private dAverageFitness: number;
   private vecPop: Genome[] = [];
   private medianFitness: number;
-  
+  private dSquaredFitnessSum: number;
   constructor(popsize: number, MutRat: number, CrossRat: number, numweights: number){
     this.iPopSize = popsize;
     this.dMutationRate = MutRat;
@@ -51,6 +52,7 @@ class GeneticAlgorithm {
     this.iFittestGenome = 0;
     this.dBestFitness = 0;
     this.dWorstFitness = 99999999;
+    this.dSquaredFitnessSum = 0;
     this.dAverageFitness = 0;
     //initialise population with chromosomes consisting of random
 	  //weights while all fitnesses are zero
@@ -95,17 +97,25 @@ class GeneticAlgorithm {
   getChromoRoulette():Genome {
     //generate a random number between 0 & total fitness count
     
-    const slice = Math.random() * this.dTotalFitness;
+    // const slice = Math.random() * this.dTotalFitness;
+    const slice = Parameters.useSquaredFitness ? Math.random() * this.dSquaredFitnessSum : Math.random() * this.dTotalFitness;
+    console.log('slice', slice, this.dSquaredFitnessSum);
     //this will be set to the chosen chromosome
     let theChosenOne;
     
     //go through the chromosomes adding up the fitness so far
+    let fitnessSoFarSq = 0;
     let fitnessSoFar = 0;
     for (let i=0; i<this.vecPop.length; i++){
+      fitnessSoFarSq += this.vecPop[i].dFitness * this.vecPop[i].dFitness;
       fitnessSoFar += this.vecPop[i].dFitness;
       //if the fitness so far > random number return the chromo at 
       //this point
-      if (fitnessSoFar >= slice){
+      if(fitnessSoFar >= slice && !Parameters.useSquaredFitness){
+        theChosenOne = this.vecPop[i];
+        break;
+      }
+      if (fitnessSoFarSq >= slice && Parameters.useSquaredFitness){
         theChosenOne = this.vecPop[i];
         break;
       }
@@ -240,6 +250,7 @@ class GeneticAlgorithm {
     let highestSoFar = 0;
     let lowestSoFar  = 9999999;
     this.vecPop.sort(Genome.sort);
+    this.dSquaredFitnessSum = 0;
     this.medianFitness = this.vecPop[Math.floor(this.vecPop.length/2)].dFitness;
     for (let i=0; i<this.vecPop.length; i++){
       //update fittest if necessary
@@ -254,6 +265,7 @@ class GeneticAlgorithm {
         this.dWorstFitness = lowestSoFar;
       }
       this.dTotalFitness	+= this.vecPop[i].dFitness;
+      this.dSquaredFitnessSum += this.vecPop[i].dFitness * this.vecPop[i].dFitness;
     }//next chromo
     this.dAverageFitness = this.dTotalFitness / this.iPopSize;
   }

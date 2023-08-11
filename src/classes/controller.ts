@@ -130,7 +130,7 @@ class Controller {
         // Get the weights from the GA and insert into the sweepers brains
         this.vecThePopulation = this.geneticAlgorithm.getChromos();
         this.vecSweepers.forEach((_, i) => {
-            this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights);
+            this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights, this.vecThePopulation[i].getName());
         });
         
        
@@ -173,6 +173,8 @@ class Controller {
                 ctx.stroke();
                 ctx.closePath();
             });
+            ctx.font = "16px arial";
+
             this.vecSweepers.forEach((_, i) => {
                 ctx.beginPath();
                 ctx.strokeStyle = "red";
@@ -187,9 +189,13 @@ class Controller {
                     ctx.lineTo(sweeperVB[vert].x, sweeperVB[vert].y);
                 }
                 ctx.lineTo(sweeperVB[0].x, sweeperVB[0].y);
+                // confirm("that is one SWEEPER")
                 ctx.stroke();
                 ctx.closePath();
-                // confirm("that is one SWEEPER")
+                ctx.strokeStyle = "#888888";
+                const name = this.vecSweepers[i].getName();
+                const num = name.split("_")[1];
+                ctx.strokeText(num, sweeperVB[0].x -5, sweeperVB[0].y -5);
             });
             // throw new Error("that is one frame");
         } else {
@@ -259,7 +265,7 @@ class Controller {
             // insert the new (hopefully)improved brains back into the sweepers
             // and reset their positions etc
             this.vecSweepers.forEach((_, i) => {
-                this.vecSweepers[i].putWeights([...this.vecThePopulation[i].vecWeights]);
+                this.vecSweepers[i].putWeights([...this.vecThePopulation[i].vecWeights], this.vecThePopulation[i].getName());
                 this.vecSweepers[i].reset();
             });
         }

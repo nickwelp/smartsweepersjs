@@ -3,6 +3,7 @@ import Vector2d from "./vector2d";
 import Parameters from "./parameters";
 import TwoDimensionalMatrix from "./twoDimensionalMatrix";
 import clamp from "../utils/clamp";
+
 class Minesweeper {
     /* minesweeper's neural net */
     private brain: NeuralNet;
@@ -25,6 +26,11 @@ class Minesweeper {
     /* right track */
     private rightTrack: number;
 
+    static counter = 0;
+
+    /* name from genome */
+    private name: string;
+
     public getNumberOfWeights = (): number => {
         return this.brain.getNumberOfWeights();
     }
@@ -40,6 +46,7 @@ class Minesweeper {
         this.closestMine = 0;
         this.leftTrack = 0.16;
         this.rightTrack = 0.16;
+        this.name = "minesweeper_" + Minesweeper.counter++;
     }
 
     /*****
@@ -154,12 +161,15 @@ class Minesweeper {
     }
 
 
+
     // accessors
+    getName = (): string => { return this.name; }
+    
     incrementFitness = (): void => { this.incrementMinesFound(); }
 
 	fitness = () => {return this.minesFound;}
   
-    putWeights = (w:number[]) => {this.brain.putWeights([...w]);}
+    putWeights = (w:number[], name:string) => {this.brain.putWeights([...w]); this.name = name;}
 
 }
 
