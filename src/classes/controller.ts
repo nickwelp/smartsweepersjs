@@ -4,6 +4,9 @@ import Minesweeper from "./mineSweeper";
 import TwoDimensionalMatrix from "./twoDimensionalMatrix";
 import Parameters from "./parameters";
 
+import randomFloat, {randomFloatSpaced} from "../utils/random";
+
+let carCounter = 0;
 
 const numberSweeperVertices = 16;
 const sweeperVertices: Vector2d[] = new Array(numberSweeperVertices);
@@ -66,10 +69,18 @@ class Controller {
     private vecMedianFitness: number[] = [];
     private pauseSwitch: HTMLInputElement;
     private canvas: HTMLCanvasElement;
+    private timepiece: HTMLElement;
 
     private pause: Function;
     private unPause: Function;
     constructor(pause:Function, unPause:Function){
+        const clock = document.createElement('div');
+        clock.setAttribute('id','timepiece') // = "timepiece";
+        const filler = document.createElement('div');
+        filler.classList.add('filler');
+        // filler.innerText = " a";
+        clock.appendChild(filler);
+        this.timepiece = filler;
         const fastRenderLabel = document.createElement("label");
         fastRenderLabel.innerText = "Fast Render";
         const fastRenderSwitch = document.createElement("input");
@@ -92,8 +103,11 @@ class Controller {
         pauseSwitch.addEventListener("change", (e) => {
             // @ts-ignore
             if(e.target.checked) {
+                console.log("pause in controller");
                 this.pause();
             } else {
+                console.log("un pause in controller");
+
                 this.unPause();
             }
         });
@@ -108,13 +122,14 @@ class Controller {
             document.body.appendChild(canvas);
             document.body.appendChild(label);
             document.body.appendChild(fastRenderLabel);
+            document.body.appendChild(clock);
         },0);
         this.canvas = canvas;
         this.numberOfSweepers = Parameters.numSweepers;
         this.numberOfMines =  Parameters.numMines;
         this.vecThePopulation = [];
-        this.vecSweepers = new Array(this.numberOfSweepers).fill('').map(() => new Minesweeper());
-        this.vecMines = new Array(this.numberOfMines).fill('').map(() => new Vector2d(Math.random() * canvas.width, Math.random() * canvas.height));
+        this.vecSweepers = new Array(this.numberOfSweepers).fill('').map(() => new Minesweeper(carCounter++));
+        this.vecMines = new Array(this.numberOfMines).fill('').map(() => new Vector2d(randomFloatSpaced() * canvas.width, randomFloatSpaced() * canvas.height));
 
         // get the total number of weights used in the sweepers
         // neural network so we can initialise the GA
@@ -130,6 +145,7 @@ class Controller {
         // Get the weights from the GA and insert into the sweepers brains
         this.vecThePopulation = this.geneticAlgorithm.getChromos();
         this.vecSweepers.forEach((_, i) => {
+            // this.vecSweepers[i].putWeights([0.4010461371331382,0.7984409227128977,0.5710315969247357,0.1606789191351956,0.11810910501373684,0.18380749114694805,0.8840943367222083,0.9519096905901043,0.6274434414553833,0.3744616205753548,0.5129740816458794,0.5049092014363008,0.5634834656201424,0.19426314191677974,0.5320826963535108,0.6426779167004371]);
             this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights);
         });
         
@@ -141,6 +157,8 @@ class Controller {
     }
 
     render():void{
+        // this.timepiece.innerText = `Generation: ${this.iTick}`;
+        this.timepiece.style.width = `${(this.iTick/Parameters.numTicks) * 100}%`;
         const generationText = `Generation: ${this.iGeneration}`;
         const ctx = this.canvas.getContext("2d");
         if(!ctx) {
@@ -173,6 +191,8 @@ class Controller {
                 ctx.stroke();
                 ctx.closePath();
             });
+            ctx.font = "9px arial";
+
             this.vecSweepers.forEach((_, i) => {
                 ctx.beginPath();
                 ctx.strokeStyle = "red";
@@ -189,8 +209,11 @@ class Controller {
                 ctx.lineTo(sweeperVB[0].x, sweeperVB[0].y);
                 ctx.stroke();
                 ctx.closePath();
+                ctx.strokeText(`Sweeper_${i}`, sweeperVB[0].x - 20, sweeperVB[0].y+10);
                 // confirm("that is one SWEEPER")
             });
+            ctx.font = "13px arial";
+
             // throw new Error("that is one frame");
         } else {
             this.plotStats(ctx);
@@ -215,7 +238,6 @@ class Controller {
     //	This is the main workhorse. The entire simulation is controlled from here.
 
     update = ():boolean => {
-        // throw new Error("Update Method not implemented.");
         //run the sweepers through CParams::iNumTicks amount of cycles. During
         //this loop each sweepers NN is constantly updated with the appropriate
         //information from its surroundings. The output from the NN is obtained
@@ -233,7 +255,7 @@ class Controller {
                     this.vecSweepers[i].incrementFitness();
                     // mine found so replace the mine with another at a random 
                     // position
-                    this.vecMines[grabHit] = new Vector2d(Math.random() * this.canvas.width, Math.random() * this.canvas.height);
+                    this.vecMines[grabHit] = new Vector2d(randomFloatSpaced() * this.canvas.width, randomFloatSpaced() * this.canvas.height);
                     
                 }
                 this.vecThePopulation[i].dFitness = this.vecSweepers[i].fitness();
@@ -251,15 +273,21 @@ class Controller {
             // reset cycles
             this.iTick = 0;
             // run the GA to create a new population
-            this.geneticAlgorithm.epoch(this.vecThePopulation);
-
+            
+            this.vecThePopulation = this.geneticAlgorithm.epoch(this.vecThePopulation);
             // what are the names of these genomes passed back to us?
             console.log(`Generation ${this.iGeneration} Genome Names:\n\t${this.vecThePopulation.map((g) => g.getName()).join("\n\t")}`)
 
             // insert the new (hopefully)improved brains back into the sweepers
             // and reset their positions etc
+            // this.vecSweepers.length = 0;
+            // this.vecSweepers = new Array(this.numberOfSweepers).fill('').map(() => new Minesweeper(carCounter++));
             this.vecSweepers.forEach((_, i) => {
-                this.vecSweepers[i].putWeights([...this.vecThePopulation[i].vecWeights]);
+                // @ts-ignore
+                // window[`sweeper_${i}`].putWeights([...this.vecThePopulation[i].vecWeights]);
+                // this.vecSweepers[i].putWeights([...this.vecThePopulation[i].vecWeights]);
+                this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights);
+
                 this.vecSweepers[i].reset();
             });
         }

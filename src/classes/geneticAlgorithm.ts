@@ -1,4 +1,6 @@
 import Parameters from "./parameters";
+import randomFloat from "../utils/random";
+
 let genomeCoutner = 0;
 
 export class Genome {
@@ -57,7 +59,7 @@ class GeneticAlgorithm {
     for (let i=0; i<this.iPopSize; i++) {
       this.vecPop.push(new Genome([],0));
       for (let j=0; j<this.iChromoLength; j++){
-        this.vecPop[i].vecWeights.push(Math.random());
+        this.vecPop[i].vecWeights.push(randomFloat());
       }
     }
   }
@@ -74,10 +76,10 @@ class GeneticAlgorithm {
     const newChromo = [];
     for (let i=0; i<chromo.length; i++) {
       // do we perturb this weight?
-      if (Math.random() < this.dMutationRate){
+      if (randomFloat() < this.dMutationRate){
         // add or subtract a small value to the weight
-        // Math.random() - Math.random() returns a value between -1 and 1
-        newChromo[i] = chromo[i] + ((Math.random() - Math.random()) * Parameters.maxPerturbation);
+        // randomFloat() - randomFloat() returns a value between -1 and 1
+        newChromo[i] = chromo[i] + ((randomFloat() - randomFloat()) * Parameters.maxPerturbation);
       } else {
         // no mutation
         newChromo[i] = chromo[i];
@@ -95,7 +97,9 @@ class GeneticAlgorithm {
   getChromoRoulette():Genome {
     //generate a random number between 0 & total fitness count
     
-    const slice = Math.random() * this.dTotalFitness;
+    const slice = randomFloat() * this.dTotalFitness;
+    // const slice =  2;
+
     //this will be set to the chosen chromosome
     let theChosenOne;
     
@@ -122,14 +126,14 @@ class GeneticAlgorithm {
   crossover(mum:number[], dad:number[], baby1:number[], baby2:number[]){
     //just return parents as offspring dependent on the rate
     //or if parents are the same
-    if ( (Math.random() > this.dCrossoverRate) || (mum.join('') === dad.join(''))) {
+    if ( (randomFloat() > this.dCrossoverRate) || (mum.join('') === dad.join(''))) {
       mum.forEach(x => baby1.push(x));
       dad.forEach(x => baby2.push(x));
       return;
     }
 
     //determine a crossover point
-    const cp = Math.round(Math.random() * (mum.length - 1));
+    const cp = Math.round(randomFloat() * (mum.length - 1));
     //create the offspring
     for (let i=0; i<cp; i++){
       baby1.push(mum[i]);
@@ -152,18 +156,18 @@ class GeneticAlgorithm {
   //	Returns a new population of chromosones.
   //
   //-----------------------------------------------------------------------
-  epoch(oldPop:Genome[]):void{
+  epoch(oldPop:Genome[]):Genome[]{
     //assign the given population to the classes population
     console.log(`this.vecPop: ${JSON.stringify(this.vecPop.map((g)=>g.getName()))}`);
-    console.log(`oldPop: ${JSON.stringify(oldPop.map((g)=>g.getName()))}`);
-    this.vecPop = oldPop;
+    console.log(`oldPops: ${JSON.stringify(oldPop.map((g)=>g.getName()))}`);
+    this.vecPop = [...oldPop];
 
     //reset the appropriate variables
     this.reset();
 
     //sort the population (for scaling and elitism)
     this.vecPop.sort(Genome.sort);
-
+    // oldPop.sort(Genome.sort);
     //calculate best, worst, average and total fitness
     this.calculateBestWorstAvTot();
     
@@ -181,6 +185,7 @@ class GeneticAlgorithm {
     
     //now we enter the GA loop
     //repeat until a new population is generated
+    console.log(`vecNewPop.length: ${vecNewPop.length} this.iPopSize: ${this.iPopSize}`);
     while (vecNewPop.length < this.iPopSize){
       //grab two chromosones
       const mum = this.getChromoRoulette();
@@ -204,7 +209,8 @@ class GeneticAlgorithm {
     //finished so assign new pop back into m_vecPop
     this.vecPop = vecNewPop;
     oldPop.length = 0;
-    oldPop.push(...this.vecPop);
+    return this.vecPop;
+    // oldPop = JSON.parse(JSON.stringify(this.vecPop));
   }
 
   

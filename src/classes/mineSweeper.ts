@@ -3,6 +3,7 @@ import Vector2d from "./vector2d";
 import Parameters from "./parameters";
 import TwoDimensionalMatrix from "./twoDimensionalMatrix";
 import clamp from "../utils/clamp";
+import randomFloat from "../utils/random";
 class Minesweeper {
     /* minesweeper's neural net */
     private brain: NeuralNet;
@@ -25,14 +26,19 @@ class Minesweeper {
     /* right track */
     private rightTrack: number;
 
+    private name: string;
+
     public getNumberOfWeights = (): number => {
         return this.brain.getNumberOfWeights();
     }
 
-    constructor() {
-        this.brain = new NeuralNet();
-        this.position = new Vector2d(Math.random() * Parameters.windowWidth, Math.random() * Parameters.windowHeight);
-        this.rotation = Math.random() * 2 * Math.PI;
+    constructor(i:number) {
+        // @ts-ignore
+        window[`sweeper_${i}`] = this;
+        this.name = `Sweeper_${i}`;
+        this.brain = new NeuralNet(`Sweeper_${i}`);
+        this.position = new Vector2d(randomFloat() * Parameters.windowWidth, randomFloat() * Parameters.windowHeight);
+        this.rotation = randomFloat() * 2 * Math.PI;
         this.lookAt = new Vector2d(Math.sin(this.rotation) * -1,Math.cos(this.rotation));
         this.velocity = 0;
         this.minesFound = 0;
@@ -48,8 +54,8 @@ class Minesweeper {
      * 
     */ 
     public reset = ():void => {
-        this.position = new Vector2d(Math.random() * Parameters.windowWidth, Math.random() * Parameters.windowHeight);
-        this.rotation = Math.random() * 2 * Math.PI;
+        // this.position = new Vector2d(randomFloat() * Parameters.windowWidth, randomFloat() * Parameters.windowHeight);
+        // this.rotation = randomFloat() * 2 * Math.PI;
         this.minesFound = 0;
     }
 
@@ -81,6 +87,8 @@ class Minesweeper {
     public update = (mines: Vector2d[]): Boolean => {
         const inputs: number[] = [];
         const closestMine = this.getClosestMine(mines);
+        // console.log(`${this.name}\n\tclosestMine: ${closestMine.x},${closestMine.y} \n\t current position: ${this.position.x},${this.position.y}`);
+        // alert('pause');
         const closestMineV: Vector2d = new Vector2d(closestMine.x, closestMine.y);
         closestMineV.normalize();
         inputs.push(closestMineV.x);
@@ -117,20 +125,23 @@ class Minesweeper {
         }
         return true;
     }
-
+    // xxxxxxxxxx
     public getClosestMine = (mines: Vector2d[]): Vector2d => {
         let closestMine = 0;
         let closestDistance = Number.MAX_VALUE;
         let distance = 0;
+        let vClosestObject = new Vector2d(0, 0);
         for (let i = 0; i < mines.length; i++) {
             const temp = new Vector2d(this.position.x, this.position.y);
-            distance = temp.subtract(mines[i]).magnitude();
+            // distance = temp.subtract(mines[i]).magnitude();
+            distance = temp.length(temp.subtract(mines[i]));
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closestMine = i;
+                vClosestObject = temp;
             }
         }
-        return mines[closestMine];
+        return vClosestObject;
     }
 
     public incrementMinesFound = (): void => {
@@ -151,6 +162,10 @@ class Minesweeper {
             return this.closestMine;
         }
         return -1;
+    }
+
+    public getName = (): string => {
+        return this.name;
     }
 
 

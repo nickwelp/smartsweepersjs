@@ -11,6 +11,9 @@ class Vector2d {
     return this;
   }
   subtract(vector:Vector2d){
+    if(!vector){
+      return this;
+    }
     this.x -= vector.x;
     this.y -= vector.y;
     return this;
@@ -43,7 +46,9 @@ class Vector2d {
       return -1;
     }
   }
-
+  public length(v:Vector2d): number{
+    return Math.sqrt(v.x*v.x + v.y*v.y);
+  }
 };
 
 export default Vector2d;

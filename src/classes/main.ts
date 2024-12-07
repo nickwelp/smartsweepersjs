@@ -30,7 +30,9 @@ class cppMessageSystem {
 export class Main {
     private controller: Controller;
     private done: boolean = false;
-    private paused: boolean = false;
+    private static paused: boolean = false;
+
+    private callStack: number = 0;
     
     
     private static instance: Main;
@@ -48,6 +50,9 @@ export class Main {
             case "pause":
                 Main.getInstance().pause();
                 break;
+            case "unpause":
+                Main.getInstance().unPause();
+                break;
             case "start":
                 Main.getInstance().controller = new Controller(Main.getInstance().pause, Main.getInstance().unPause);   
                 break;
@@ -64,23 +69,14 @@ export class Main {
         }
     }
 
-    pause(): void {
-        this.paused = true; 
-        confirm("pause");
-        // cppMessageSystem.pushMessage("pause");
-        // throw new Error("Method not implemented.");
-    }
-    unPause(): void {
-
-        this.paused = false;
-        this.loop();
-    }
+ 
 
     private loop = () => {
+        // if(Main.paused) return;
         while(cppMessageSystem.peekMessage() !== ""){ 
             Main.messageProcesser();
         }
-        if(this.controller.getFastRender() || this.timer.readyForNextFrame()){
+        if(this.timer.readyForNextFrame() || this.controller.getFastRender()){
             if(!this.controller.update()){
                 console.error('Error in controller update');
                 this.done = true;
@@ -88,15 +84,44 @@ export class Main {
             cppMessageSystem.pushMessage("paint");
         }
         if(this.done) cppMessageSystem.pushMessage("quit");
-        if(!this.paused) setTimeout(this.loop, 0);
+        if(!Main.paused) {
+            // this.running = true;
+            // setTimeout(this.loop, 0);
+            // setInterval(this.loop, 0);
+            this.callStack++;
+            if(this.callStack < 2000){
+                Main.getInstance().loop();
+            } else {
+                this.callStack = 0;
+                setTimeout(() => Main.getInstance().loop(), 0);
+            }
+        }
+    }
+
+    pause(): void {
+        Main.paused = true; 
+        // confirm("pause")
+        // cppMessageSystem.pushMessage("pause");
+        // throw new Error("Method not implemented.");
+    }
+    unPause(): void {
+        console.log("unpausing");
+        Main.paused = false;
+        // this.loop();
+        // cppMessageSystem.pushMessage("unpause");
+        Main.getInstance().loop();
+        // setTimeout(t his.loop, 0);
+        // this.loop();
+        // setTimeout(this.loop, 0); 
     }
 
     constructor(){
-        this.paused = false;
+        Main.paused = false;
         this.done = false;
         this.timer = new Timer(Parameters.framesPerSecond);
         this.controller= new Controller(this.pause, this.unPause);
-        setTimeout(this.loop, 0);    
+        setTimeout(this.loop, 0);  
+        // this.loop();  
     }
 }
 

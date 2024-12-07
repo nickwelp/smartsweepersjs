@@ -1,13 +1,16 @@
+import randomFloat from "../utils/random";
+
 class Neuron {
   numInputs:number;
-  vecWeight:number[] = [];
+  public vecWeight:number[] = [];
 
 
   constructor(numInputs:number) {
     //we need an additional weight for the bias hence the +1
     this.numInputs = numInputs;
     for (let i=0; i<numInputs+1; ++i){
-      this.vecWeight.push(Math.random());
+      this.vecWeight.push(randomFloat());
+      // this.vecWeight.push(0.9990001);
     }
   }
 

@@ -612,6 +612,9 @@ class cppMessageSystem {
     }
 }
 class Main {
+    static #_ = (()=>{
+        this.paused = false;
+    })();
     static getInstance() {
         if (!Main.instance) Main.instance = new Main();
         return Main.instance;
@@ -621,6 +624,9 @@ class Main {
         switch(cppMessageSystem.popMessage()){
             case "pause":
                 Main.getInstance().pause();
+                break;
+            case "unpause":
+                Main.getInstance().unPause();
                 break;
             case "start":
                 Main.getInstance().controller = new (0, _controllerDefault.default)(Main.getInstance().pause, Main.getInstance().unPause);
@@ -636,18 +642,20 @@ class Main {
         }
     }
     pause() {
-        this.paused = true;
-        confirm("pause");
+        Main.paused = true;
+    // confirm("pause")
     // cppMessageSystem.pushMessage("pause");
     // throw new Error("Method not implemented.");
     }
     unPause() {
-        this.paused = false;
-        this.loop();
+        console.log("unpausing");
+        Main.paused = false;
+        Main.instance.loop();
+        // cppMessageSystem.pushMessage("unpause");
+        setTimeout(this.loop, 0);
     }
     constructor(){
         this.done = false;
-        this.paused = false;
         this.loop = ()=>{
             while(cppMessageSystem.peekMessage() !== "")Main.messageProcesser();
             if (this.controller.getFastRender() || this.timer.readyForNextFrame()) {
@@ -658,9 +666,9 @@ class Main {
                 cppMessageSystem.pushMessage("paint");
             }
             if (this.done) cppMessageSystem.pushMessage("quit");
-            if (!this.paused) setTimeout(this.loop, 0);
+            if (!Main.paused) setTimeout(this.loop, 0);
         };
-        this.paused = false;
+        Main.paused = false;
         this.done = false;
         this.timer = new (0, _timerDefault.default)((0, _parametersDefault.default).framesPerSecond);
         this.controller = new (0, _controllerDefault.default)(this.pause, this.unPause);
@@ -748,13 +756,15 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class Parameters {
     static #_ = (()=>{
-        /* General parameters */ this.windowWidth = 800;
+        /* General parameters */ // static windowWidth = 600;
+        // static windowHeight = 450;
+        this.windowWidth = 400;
     })();
     static #_1 = (()=>{
-        this.windowHeight = 600;
+        this.windowHeight = 400;
     })();
     static #_2 = (()=>{
-        this.framesPerSecond = 60;
+        this.framesPerSecond = 120;
     })();
     static #_3 = (()=>{
         /* Used for the neural network */ this.numInputs = 4;
@@ -763,13 +773,15 @@ class Parameters {
         this.numHidden = 1;
     })();
     static #_5 = (()=>{
-        this.neuronsPerHiddenLayer = 6;
+        this.neuronsPerHiddenLayer = 6 //6
+        ;
     })();
     static #_6 = (()=>{
         this.numOutputs = 2;
     })();
     static #_7 = (()=>{
-        /* for tweeking the sigmoid function */ this.activationResponse = 1;
+        /* for tweeking the sigmoid function */ this.activationResponse = 1 //1
+        ;
     })();
     static #_8 = (()=>{
         /* Bias value */ this.bias = -1;
@@ -781,38 +793,42 @@ class Parameters {
         this.maxSpeed = 2;
     })();
     static #_11 = (()=>{
-        /* for controlling the size */ this.sweeperScale = 2;
+        /* for controlling the size */ this.sweeperScale = 5;
     })();
     static #_12 = (()=>{
-        /* controller parameters */ this.numMines = 40;
+        /* controller parameters */ this.numMines = 40 //40
+        ;
     })();
     static #_13 = (()=>{
-        this.numSweepers = 30;
+        this.numSweepers = 30 //30; // 30; // 30;
+        ;
     })();
     static #_14 = (()=>{
-        /* number of time steps we allow for each generation to live */ this.numTicks = 2000;
+        /* number of time steps we allow for each generation to live */ this.numTicks = 2000 // 2000;
+        ;
     })();
     static #_15 = (()=>{
         /* scaling factor for mines */ this.mineScale = 2;
     })();
     static #_16 = (()=>{
-        /* Genetic Algorithim parameters */ this.crossoverRate = 0.7;
+        /* Genetic Algorithim parameters */ this.crossoverRate = 0.7 // 0.7 // 1  is no corss over, 0 evety time
+        ;
     })();
     static #_17 = (()=>{
-        this.mutationRate = 0.1 // 0.1
+        this.mutationRate = 0.05 // 0.1
         ;
     })();
     static #_18 = (()=>{
-        /* the maximum amount the ga may mutate each weight by */ this.maxPerturbation = 0.3;
+        /* the maximum amount the ga may mutate each weight by */ this.maxPerturbation = 0.3 //0.3
+        ;
     })();
     static #_19 = (()=>{
-        /* used for elitism */ this.numElite = 4;
+        /* used for elitism */ this.numElite = 4 //4
+        ;
     })();
     static #_20 = (()=>{
-        this.numCopiesElite = 1;
-    })();
-    static #_21 = (()=>{
-        this.useSquaredFitness = false;
+        this.numCopiesElite = 1 //1
+        ;
     })();
 }
 exports.default = Parameters;
@@ -830,6 +846,8 @@ var _twoDimensionalMatrix = require("./twoDimensionalMatrix");
 var _twoDimensionalMatrixDefault = parcelHelpers.interopDefault(_twoDimensionalMatrix);
 var _parameters = require("./parameters");
 var _parametersDefault = parcelHelpers.interopDefault(_parameters);
+var _random = require("../utils/random");
+let carCounter = 0;
 const numberSweeperVertices = 16;
 const sweeperVertices = new Array(numberSweeperVertices);
 sweeperVertices[0] = new (0, _vector2DDefault.default)(-1, -1);
@@ -874,7 +892,6 @@ class Controller {
         //
         //	This is the main workhorse. The entire simulation is controlled from here.
         this.update = ()=>{
-            // throw new Error("Update Method not implemented.");
             //run the sweepers through CParams::iNumTicks amount of cycles. During
             //this loop each sweepers NN is constantly updated with the appropriate
             //information from its surroundings. The output from the NN is obtained
@@ -891,7 +908,7 @@ class Controller {
                     this.vecSweepers[i].incrementFitness();
                     // mine found so replace the mine with another at a random 
                     // position
-                    this.vecMines[grabHit] = new (0, _vector2DDefault.default)(Math.random() * this.canvas.width, Math.random() * this.canvas.height);
+                    this.vecMines[grabHit] = new (0, _vector2DDefault.default)((0, _random.randomFloatSpaced)() * this.canvas.width, (0, _random.randomFloatSpaced)() * this.canvas.height);
                 }
                 this.vecThePopulation[i].dFitness = this.vecSweepers[i].fitness();
             });
@@ -904,20 +921,26 @@ class Controller {
                 // reset cycles
                 this.iTick = 0;
                 // run the GA to create a new population
-                this.geneticAlgorithm.epoch(this.vecThePopulation);
+                this.vecThePopulation = this.geneticAlgorithm.epoch(this.vecThePopulation);
                 // what are the names of these genomes passed back to us?
                 console.log(`Generation ${this.iGeneration} Genome Names:\n\t${this.vecThePopulation.map((g)=>g.getName()).join("\n	")}`);
                 // insert the new (hopefully)improved brains back into the sweepers
                 // and reset their positions etc
+                // this.vecSweepers.length = 0;
+                // this.vecSweepers = new Array(this.numberOfSweepers).fill('').map(() => new Minesweeper(carCounter++));
                 this.vecSweepers.forEach((_, i)=>{
                     this.vecSweepers[i].putWeights([
                         ...this.vecThePopulation[i].vecWeights
-                    ], this.vecThePopulation[i].getName());
+                    ]);
                     this.vecSweepers[i].reset();
                 });
             }
             return true;
         };
+        const clock = document.createElement("div");
+        clock.classList.add("clock");
+        this.timepiece = clock;
+        this.timepiece.innerText = `Tick: ${this.iGeneration}`;
         const fastRenderLabel = document.createElement("label");
         fastRenderLabel.innerText = "Fast Render";
         const fastRenderSwitch = document.createElement("input");
@@ -936,8 +959,13 @@ class Controller {
         pauseSwitch.checked = false;
         pauseSwitch.addEventListener("change", (e)=>{
             // @ts-ignore
-            if (e.target.checked) this.pause();
-            else this.unPause();
+            if (e.target.checked) {
+                console.log("pause in controller");
+                this.pause();
+            } else {
+                console.log("un pause in controller");
+                this.unPause();
+            }
         });
         label.appendChild(pauseSwitch);
         this.pauseSwitch = pauseSwitch;
@@ -955,8 +983,8 @@ class Controller {
         this.numberOfSweepers = (0, _parametersDefault.default).numSweepers;
         this.numberOfMines = (0, _parametersDefault.default).numMines;
         this.vecThePopulation = [];
-        this.vecSweepers = new Array(this.numberOfSweepers).fill("").map(()=>new (0, _mineSweeperDefault.default)());
-        this.vecMines = new Array(this.numberOfMines).fill("").map(()=>new (0, _vector2DDefault.default)(Math.random() * canvas.width, Math.random() * canvas.height));
+        this.vecSweepers = new Array(this.numberOfSweepers).fill("").map(()=>new (0, _mineSweeperDefault.default)(carCounter++));
+        this.vecMines = new Array(this.numberOfMines).fill("").map(()=>new (0, _vector2DDefault.default)((0, _random.randomFloatSpaced)() * canvas.width, (0, _random.randomFloatSpaced)() * canvas.height));
         // get the total number of weights used in the sweepers
         // neural network so we can initialise the GA
         this.numberOfWeightsInNN = this.vecSweepers[0].getNumberOfWeights();
@@ -965,13 +993,14 @@ class Controller {
         // Get the weights from the GA and insert into the sweepers brains
         this.vecThePopulation = this.geneticAlgorithm.getChromos();
         this.vecSweepers.forEach((_, i)=>{
-            this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights, this.vecThePopulation[i].getName());
+            this.vecSweepers[i].putWeights(this.vecThePopulation[i].vecWeights);
         });
         // fill the vertex buffers
         this.sweeperVB = sweeperVertices.map((v)=>new (0, _vector2DDefault.default)(v.x, v.y));
         this.mineVB = mine.map((v)=>new (0, _vector2DDefault.default)(v.x, v.y));
     }
     render() {
+        this.timepiece.innerText = `Generation: ${this.iTick}`;
         const generationText = `Generation: ${this.iGeneration}`;
         const ctx = this.canvas.getContext("2d");
         if (!ctx) {
@@ -1002,7 +1031,7 @@ class Controller {
                 ctx.stroke();
                 ctx.closePath();
             });
-            ctx.font = "16px arial";
+            ctx.font = "9px arial";
             this.vecSweepers.forEach((_, i)=>{
                 ctx.beginPath();
                 ctx.strokeStyle = "red";
@@ -1013,14 +1042,12 @@ class Controller {
                 ctx.moveTo(sweeperVB[0].x, sweeperVB[0].y);
                 for(let vert = 1; vert < sweeperVB.length; vert++)ctx.lineTo(sweeperVB[vert].x, sweeperVB[vert].y);
                 ctx.lineTo(sweeperVB[0].x, sweeperVB[0].y);
-                // confirm("that is one SWEEPER")
                 ctx.stroke();
                 ctx.closePath();
-                ctx.strokeStyle = "#888888";
-                const name = this.vecSweepers[i].getName();
-                const num = name.split("_")[1];
-                ctx.strokeText(num, sweeperVB[0].x - 5, sweeperVB[0].y - 5);
+                ctx.strokeText(`Sweeper_${i}`, sweeperVB[0].x - 20, sweeperVB[0].y + 10);
+            // confirm("that is one SWEEPER")
             });
+            ctx.font = "13px arial";
         // throw new Error("that is one frame");
         } else this.plotStats(ctx);
     // confirm("that is one frame");
@@ -1090,7 +1117,7 @@ class Controller {
 }
 exports.default = Controller;
 
-},{"./vector2d":"gPsFU","./geneticAlgorithm":"1ewjC","./mineSweeper":"fn61y","./twoDimensionalMatrix":"9xMkg","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./parameters":"j9VLC"}],"gPsFU":[function(require,module,exports) {
+},{"./vector2d":"gPsFU","./geneticAlgorithm":"1ewjC","./mineSweeper":"fn61y","./twoDimensionalMatrix":"9xMkg","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./parameters":"j9VLC","../utils/random":"1hQBY"}],"gPsFU":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class Vector2d {
@@ -1104,6 +1131,7 @@ class Vector2d {
         return this;
     }
     subtract(vector) {
+        if (!vector) return this;
         this.x -= vector.x;
         this.y -= vector.y;
         return this;
@@ -1133,6 +1161,9 @@ class Vector2d {
         if (vector1.y * vector2.x > vector1.x * vector2.y) return 1;
         else return -1;
     }
+    length(v) {
+        return Math.sqrt(v.x * v.x + v.y * v.y);
+    }
 }
 exports.default = Vector2d;
 
@@ -1142,10 +1173,10 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "Genome", ()=>Genome);
 var _parameters = require("./parameters");
 var _parametersDefault = parcelHelpers.interopDefault(_parameters);
+var _random = require("../utils/random");
+var _randomDefault = parcelHelpers.interopDefault(_random);
+let genomeCoutner = 0;
 class Genome {
-    static #_ = (()=>{
-        this.genomeCoutner = 0;
-    })();
     static sort(a, b) {
         return a.dFitness - b.dFitness;
     }
@@ -1158,7 +1189,7 @@ class Genome {
     constructor(w = [], dFitness = 0, name = ""){
         this.vecWeights = [];
         this.dFitness = 0;
-        this.name = name ? name : `Genome_${Genome.genomeCoutner++}`;
+        this.name = name ? name : `Genome_${genomeCoutner++}`;
         if (w.length < 1) this.dFitness = 0;
         else if (w.length > 0) {
             this.vecWeights = [
@@ -1181,13 +1212,12 @@ class GeneticAlgorithm {
         this.iFittestGenome = 0;
         this.dBestFitness = 0;
         this.dWorstFitness = 99999999;
-        this.dSquaredFitnessSum = 0;
         this.dAverageFitness = 0;
         //initialise population with chromosomes consisting of random
         //weights while all fitnesses are zero
         for(let i = 0; i < this.iPopSize; i++){
             this.vecPop.push(new Genome([], 0));
-            for(let j = 0; j < this.iChromoLength; j++)this.vecPop[i].vecWeights.push(Math.random());
+            for(let j = 0; j < this.iChromoLength; j++)this.vecPop[i].vecWeights.push((0, _randomDefault.default)());
         }
     }
     //---------------------------------mutate--------------------------------
@@ -1201,9 +1231,9 @@ class GeneticAlgorithm {
         // on the mutation rate
         const newChromo = [];
         for(let i = 0; i < chromo.length; i++)// do we perturb this weight?
-        if (Math.random() < this.dMutationRate) // add or subtract a small value to the weight
-        // Math.random() - Math.random() returns a value between -1 and 1
-        newChromo[i] = chromo[i] + (Math.random() - Math.random()) * (0, _parametersDefault.default).maxPerturbation;
+        if ((0, _randomDefault.default)() < this.dMutationRate) // add or subtract a small value to the weight
+        // randomFloat() - randomFloat() returns a value between -1 and 1
+        newChromo[i] = chromo[i] + ((0, _randomDefault.default)() - (0, _randomDefault.default)()) * (0, _parametersDefault.default).maxPerturbation;
         else // no mutation
         newChromo[i] = chromo[i];
         return newChromo;
@@ -1215,24 +1245,16 @@ class GeneticAlgorithm {
     //-----------------------------------------------------------------------
     getChromoRoulette() {
         //generate a random number between 0 & total fitness count
-        // const slice = Math.random() * this.dTotalFitness;
-        const slice = (0, _parametersDefault.default).useSquaredFitness ? Math.random() * this.dSquaredFitnessSum : Math.random() * this.dTotalFitness;
-        console.log("slice", slice, this.dSquaredFitnessSum);
+        const slice = (0, _randomDefault.default)() * this.dTotalFitness;
         //this will be set to the chosen chromosome
         let theChosenOne;
         //go through the chromosomes adding up the fitness so far
-        let fitnessSoFarSq = 0;
         let fitnessSoFar = 0;
         for(let i = 0; i < this.vecPop.length; i++){
-            fitnessSoFarSq += this.vecPop[i].dFitness * this.vecPop[i].dFitness;
             fitnessSoFar += this.vecPop[i].dFitness;
             //if the fitness so far > random number return the chromo at 
             //this point
-            if (fitnessSoFar >= slice && !(0, _parametersDefault.default).useSquaredFitness) {
-                theChosenOne = this.vecPop[i];
-                break;
-            }
-            if (fitnessSoFarSq >= slice && (0, _parametersDefault.default).useSquaredFitness) {
+            if (fitnessSoFar >= slice) {
                 theChosenOne = this.vecPop[i];
                 break;
             }
@@ -1250,13 +1272,13 @@ class GeneticAlgorithm {
     crossover(mum, dad, baby1, baby2) {
         //just return parents as offspring dependent on the rate
         //or if parents are the same
-        if (Math.random() > this.dCrossoverRate || mum.join("") === dad.join("")) {
+        if ((0, _randomDefault.default)() > this.dCrossoverRate || mum.join("") === dad.join("")) {
             mum.forEach((x)=>baby1.push(x));
             dad.forEach((x)=>baby2.push(x));
             return;
         }
         //determine a crossover point
-        const cp = Math.round(Math.random() * (mum.length - 1));
+        const cp = Math.round((0, _randomDefault.default)() * (mum.length - 1));
         //create the offspring
         for(let i = 0; i < cp; i++){
             baby1.push(mum[i]);
@@ -1278,7 +1300,7 @@ class GeneticAlgorithm {
     epoch(oldPop) {
         //assign the given population to the classes population
         console.log(`this.vecPop: ${JSON.stringify(this.vecPop.map((g)=>g.getName()))}`);
-        console.log(`oldPop: ${JSON.stringify(oldPop.map((g)=>g.getName()))}`);
+        console.log(`oldPops: ${JSON.stringify(oldPop.map((g)=>g.getName()))}`);
         this.vecPop = oldPop;
         //reset the appropriate variables
         this.reset();
@@ -1295,6 +1317,7 @@ class GeneticAlgorithm {
         else console.log("error: numCopiesElite * numElite is not even");
         //now we enter the GA loop
         //repeat until a new population is generated
+        console.log(`vecNewPop.length: ${vecNewPop.length} this.iPopSize: ${this.iPopSize}`);
         while(vecNewPop.length < this.iPopSize){
             //grab two chromosones
             const mum = this.getChromoRoulette();
@@ -1318,7 +1341,8 @@ class GeneticAlgorithm {
         //finished so assign new pop back into m_vecPop
         this.vecPop = vecNewPop;
         oldPop.length = 0;
-        oldPop.push(...this.vecPop);
+        return this.vecPop;
+    // oldPop = JSON.parse(JSON.stringify(this.vecPop));
     }
     //-------------------------grabNBest----------------------------------
     //
@@ -1343,7 +1367,6 @@ class GeneticAlgorithm {
         let highestSoFar = 0;
         let lowestSoFar = 9999999;
         this.vecPop.sort(Genome.sort);
-        this.dSquaredFitnessSum = 0;
         this.medianFitness = this.vecPop[Math.floor(this.vecPop.length / 2)].dFitness;
         for(let i = 0; i < this.vecPop.length; i++){
             //update fittest if necessary
@@ -1358,7 +1381,6 @@ class GeneticAlgorithm {
                 this.dWorstFitness = lowestSoFar;
             }
             this.dTotalFitness += this.vecPop[i].dFitness;
-            this.dSquaredFitnessSum += this.vecPop[i].dFitness * this.vecPop[i].dFitness;
         } //next chromo
         this.dAverageFitness = this.dTotalFitness / this.iPopSize;
     }
@@ -1392,7 +1414,26 @@ class GeneticAlgorithm {
 }
 exports.default = GeneticAlgorithm;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./parameters":"j9VLC"}],"fn61y":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./parameters":"j9VLC","../utils/random":"1hQBY"}],"1hQBY":[function(require,module,exports) {
+/** this file exists to pipe random through a controllable function for testing */ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "randomFloatSpaced", ()=>randomFloatSpaced);
+let index = 0;
+const randomFloat = ()=>{
+    // return (0.005 + (index++ * 0.21 )) % 1;
+    // const t = Math.random();
+    // console.log(t);
+    // return t;
+    return Math.random();
+};
+const randomFloatSpaced = ()=>{
+    // return 0.05 * index++;
+    return randomFloat();
+// return Math.random();
+};
+exports.default = randomFloat;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fn61y":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _neuralNet = require("./neuralNet");
@@ -1405,11 +1446,10 @@ var _twoDimensionalMatrix = require("./twoDimensionalMatrix");
 var _twoDimensionalMatrixDefault = parcelHelpers.interopDefault(_twoDimensionalMatrix);
 var _clamp = require("../utils/clamp");
 var _clampDefault = parcelHelpers.interopDefault(_clamp);
+var _random = require("../utils/random");
+var _randomDefault = parcelHelpers.interopDefault(_random);
 class Minesweeper {
-    static #_ = (()=>{
-        this.counter = 0;
-    })();
-    constructor(){
+    constructor(i){
         this.getNumberOfWeights = ()=>{
             return this.brain.getNumberOfWeights();
         };
@@ -1418,8 +1458,8 @@ class Minesweeper {
      * Resets the sweepers position, fitness and rotation
      * 
     */ this.reset = ()=>{
-            this.position = new (0, _vector2DDefault.default)(Math.random() * (0, _parametersDefault.default).windowWidth, Math.random() * (0, _parametersDefault.default).windowHeight);
-            this.rotation = Math.random() * 2 * Math.PI;
+            // this.position = new Vector2d(randomFloat() * Parameters.windowWidth, randomFloat() * Parameters.windowHeight);
+            // this.rotation = randomFloat() * 2 * Math.PI;
             this.minesFound = 0;
         };
         /**
@@ -1447,6 +1487,8 @@ class Minesweeper {
     * */ this.update = (mines)=>{
             const inputs = [];
             const closestMine = this.getClosestMine(mines);
+            // console.log(`${this.name}\n\tclosestMine: ${closestMine.x},${closestMine.y} \n\t current position: ${this.position.x},${this.position.y}`);
+            // alert('pause');
             const closestMineV = new (0, _vector2DDefault.default)(closestMine.x, closestMine.y);
             closestMineV.normalize();
             inputs.push(closestMineV.x);
@@ -1471,19 +1513,23 @@ class Minesweeper {
             if (this.position.y > (0, _parametersDefault.default).windowHeight) this.position.y = this.position.y % (0, _parametersDefault.default).windowHeight;
             return true;
         };
+        // xxxxxxxxxx
         this.getClosestMine = (mines)=>{
             let closestMine = 0;
             let closestDistance = Number.MAX_VALUE;
             let distance = 0;
+            let vClosestObject = new (0, _vector2DDefault.default)(0, 0);
             for(let i = 0; i < mines.length; i++){
                 const temp = new (0, _vector2DDefault.default)(this.position.x, this.position.y);
-                distance = temp.subtract(mines[i]).magnitude();
+                // distance = temp.subtract(mines[i]).magnitude();
+                distance = temp.length(temp.subtract(mines[i]));
                 if (distance < closestDistance) {
                     closestDistance = distance;
                     closestMine = i;
+                    vClosestObject = temp;
                 }
             }
-            return mines[closestMine];
+            return vClosestObject;
         };
         this.incrementMinesFound = ()=>{
             this.minesFound++;
@@ -1500,25 +1546,27 @@ class Minesweeper {
             if (distance < size + 5) return this.closestMine;
             return -1;
         };
-        // accessors
         this.getName = ()=>{
             return this.name;
         };
+        // accessors
         this.incrementFitness = ()=>{
             this.incrementMinesFound();
         };
         this.fitness = ()=>{
             return this.minesFound;
         };
-        this.putWeights = (w, name)=>{
+        this.putWeights = (w)=>{
             this.brain.putWeights([
                 ...w
             ]);
-            this.name = name;
         };
-        this.brain = new (0, _neuralNetDefault.default)();
-        this.position = new (0, _vector2DDefault.default)(Math.random() * (0, _parametersDefault.default).windowWidth, Math.random() * (0, _parametersDefault.default).windowHeight);
-        this.rotation = Math.random() * 2 * Math.PI;
+        // @ts-ignore
+        window[`sweeper_${i}`] = this;
+        this.name = `Sweeper_${i}`;
+        this.brain = new (0, _neuralNetDefault.default)(`Sweeper_${i}`);
+        this.position = new (0, _vector2DDefault.default)((0, _randomDefault.default)() * (0, _parametersDefault.default).windowWidth, (0, _randomDefault.default)() * (0, _parametersDefault.default).windowHeight);
+        this.rotation = (0, _randomDefault.default)() * 2 * Math.PI;
         this.lookAt = new (0, _vector2DDefault.default)(Math.sin(this.rotation) * -1, Math.cos(this.rotation));
         this.velocity = 0;
         this.minesFound = 0;
@@ -1526,12 +1574,11 @@ class Minesweeper {
         this.closestMine = 0;
         this.leftTrack = 0.16;
         this.rightTrack = 0.16;
-        this.name = "minesweeper_" + Minesweeper.counter++;
     }
 }
 exports.default = Minesweeper;
 
-},{"./neuralNet":"e2DsB","./vector2d":"gPsFU","./parameters":"j9VLC","./twoDimensionalMatrix":"9xMkg","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../utils/clamp":"7Y4oV"}],"e2DsB":[function(require,module,exports) {
+},{"./neuralNet":"e2DsB","./vector2d":"gPsFU","./parameters":"j9VLC","./twoDimensionalMatrix":"9xMkg","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../utils/clamp":"7Y4oV","../utils/random":"1hQBY"}],"e2DsB":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _neuronLayer = require("./neuronLayer");
@@ -1540,15 +1587,22 @@ var _parameters = require("./parameters");
 var _parametersDefault = parcelHelpers.interopDefault(_parameters);
 // import { dActivationResponse, dBias, iNeuronsPerHiddenLayer, iNumHidden, iNumInputs, iNumOutputs } from "./parameters";
 class NeuralNet {
-    constructor(){
+    constructor(name){
         this.neuronLayers = [];
+        this.incomingWeights = [];
+        this.outgoingWeights = [];
+        this.cycles = 0;
+        this.name = name;
         this.numInputs = (0, _parametersDefault.default).numInputs;
         this.numOutputs = (0, _parametersDefault.default).numOutputs;
         this.numHiddenLayers = (0, _parametersDefault.default).numHidden;
         this.neuronsPerHiddenLayer = (0, _parametersDefault.default).neuronsPerHiddenLayer;
         this.createNet();
+        // @ts-ignore
+        window[`neuralNet_${name}`] = this;
     }
     createNet() {
+        console.log("CREATING NET", this);
         //create the layers of the network
         if (this.numHiddenLayers > 0) {
             //create first hidden layer
@@ -1574,6 +1628,7 @@ class NeuralNet {
     }
     //	returns an array containing the weights
     getWeights() {
+        // return this.outgoingWeights;
         //this will hold the weights
         const weights = [];
         //for each layer
@@ -1582,19 +1637,45 @@ class NeuralNet {
             for(let j = 0; j < this.neuronLayers[i].numNeurons; j++)//for each weight
             for(let k = 0; k < this.neuronLayers[i].vecNeurons[j].numInputs; k++)weights.push(this.neuronLayers[i].vecNeurons[j].vecWeight[k]);
         }
+        // console.log(`${this.name} has weights: ${JSON.stringify(weights)}`);
         return weights;
     }
     putWeights(weights) {
+        // console.log(`putting weights on ${this.name}`);
+        // this.incomingWeights = [...weights];
+        // this.outgoingWeights = [...weights];
+        // return;
+        // this.getWeights();
+        // console.log(`putting weights on ${this.name}\n${JSON.stringify(weights)}`);
         let cWeight = 0;
         //for each layer
         for(let i = 0; i < this.numHiddenLayers; i++)//for each neuron
         if (this.neuronLayers.length > 0) {
-            for(let j = 0; j < this.neuronLayers[i].numNeurons; j++)//for each weight
-            for(let k = 0; k < this.neuronLayers[i].vecNeurons[j].numInputs; k++)this.neuronLayers[i].vecNeurons[j].vecWeight[k] = weights[cWeight++];
+            for(let j = 0; j < this.neuronLayers[i].numNeurons; j++)// this.neuronLayers[i].vecNeurons[j].vecWeight.length = 0;
+            //for each weight
+            for(let k = 0; k < this.neuronLayers[i].vecNeurons[j].numInputs; k++)// console.log(`layer ${i} neroun ${j} weight ${k} = cWeight index: ${cWeight} ${weights[cWeight]}`);
+            this.neuronLayers[i].vecNeurons[j].vecWeight[k] = weights[cWeight++];
         }
+        // this.getWeights();
         return;
     }
     update(inputArgs) {
+        if (this.incomingWeights.length > 0) {
+            // console.log(`putting weights on ${this.name}`);
+            let cWeight = 0;
+            //for each layer
+            for(let i = 0; i < this.numHiddenLayers; i++)//for each neuron
+            if (this.neuronLayers.length > 0) {
+                for(let j = 0; j < this.neuronLayers[i].numNeurons; j++)// this.neuronLayers[i].vecNeurons[j].vecWeight.length = 0;
+                //for each weight
+                for(let k = 0; k < this.neuronLayers[i].vecNeurons[j].numInputs; k++)// console.log(`layer ${i} neroun ${j} weight ${k} = cWeight index: ${cWeight} ${weights[cWeight]}`);
+                this.neuronLayers[i].vecNeurons[j].vecWeight[k] = this.incomingWeights[cWeight++];
+            }
+            this.outgoingWeights = [
+                ...this.incomingWeights
+            ];
+            this.incomingWeights.length = 0;
+        }
         let inputs = [
             ...inputArgs
         ];
@@ -1616,18 +1697,29 @@ class NeuralNet {
             cWeight = 0;
             // for each neuron sum the (inputs * corresponding weights).
             // Throw the total at our sigmoid function to get the output.
-            if (this.neuronLayers.length > 0) for(let j = 0; j < this.neuronLayers[i].numNeurons; j++){
-                let netinput = 0;
-                this.numInputs = this.neuronLayers[i].vecNeurons[j].numInputs;
-                for(let k = 0; k < this.numInputs - 1; k++)// sum the weights x inputs
-                netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[k] * inputs[cWeight++];
-                // add in the bias
-                netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[this.numInputs - 1] * (0, _parametersDefault.default).bias;
-                // we can store the outputs from each layer as we generate them.
-                // The combined activation is first filtered through the sigmoid
-                // function
-                outputs.push(this.sigmoid(netinput, (0, _parametersDefault.default).activationResponse));
-                cWeight = 0;
+            if (this.neuronLayers.length > 0) {
+                for(let j = 0; j < this.neuronLayers[i].numNeurons; j++){
+                    let netinput = 0;
+                    this.numInputs = this.neuronLayers[i].vecNeurons[j].numInputs;
+                    // for (let k=0; k<this.numInputs-1; k++){
+                    for(let k = 0; k < this.numInputs - 1; k++){
+                        // sum the weights x inputs
+                        if (this.name === "Sweeper_0" && k === 0 && i === 0 && j === 0 && this.cycles % 52 === 0) console.log(`Sweeper_0 info:\n\tindex: ${cWeight}\n\tweight:${this.neuronLayers[i].vecNeurons[j].vecWeight[k]}\n\toutgoing weight ${this.outgoingWeights[0]}`);
+                        netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[k] * inputs[cWeight++];
+                    }
+                    // add in the bias
+                    netinput += this.neuronLayers[i].vecNeurons[j].vecWeight[this.numInputs - 1] * (0, _parametersDefault.default).bias;
+                    // we can store the outputs from each layer as we generate them.
+                    // The combined activation is first filtered through the sigmoid
+                    // function
+                    outputs.push(this.sigmoid(netinput, (0, _parametersDefault.default).activationResponse));
+                    cWeight = 0;
+                }
+                if (this.name === "Sweeper_0") {
+                    this.cycles++;
+                    if (this.cycles % 100 === 0) this.cycles = 0;
+                // this.neuronLayers[i].vecNeurons[j].vecWeight[k] = 0.5;
+                }
             }
         }
         return outputs;
@@ -1657,17 +1749,19 @@ exports.default = NeuronLayer;
 },{"./neuron":"9HiX7","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9HiX7":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
+var _random = require("../utils/random");
+var _randomDefault = parcelHelpers.interopDefault(_random);
 class Neuron {
     constructor(numInputs){
         this.vecWeight = [];
         //we need an additional weight for the bias hence the +1
         this.numInputs = numInputs;
-        for(let i = 0; i < numInputs + 1; ++i)this.vecWeight.push(Math.random());
+        for(let i = 0; i < numInputs + 1; ++i)this.vecWeight.push((0, _randomDefault.default)());
     }
 }
 exports.default = Neuron;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9xMkg":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../utils/random":"1hQBY"}],"9xMkg":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class TwoDimensionalMatrix {
